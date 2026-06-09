@@ -1,0 +1,130 @@
+/* Reset and Global Styles */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  --bg-dark: #07070a;
+  --surface-dark: #0e0e15;
+  --surface-card: #161622;
+  --accent-primary: #c084fc;
+  --accent-secondary: #34d399;
+  --text-primary: #fafafa;
+  --text-muted: #71717a;
+  --border-glow: rgba(192, 132, 252, 0.15);
+  --font-display: 'Cinzel', serif;
+  --font-body: 'Inter', sans-serif;
+}
+
+html, body {
+  background-color: var(--bg-dark);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* Glassmorphism Styles */
+.glass-panel {
+  background: rgba(22, 22, 34, 0.75);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 16px;
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+}
+
+.glass-card {
+  background: rgba(22, 22, 34, 0.6);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.03);
+  border-radius: 12px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.glass-card:hover {
+  border-color: rgba(192, 132, 252, 0.3);
+  box-shadow: 0 0 20px rgba(192, 132, 252, 0.1);
+  transform: translateY(-2px);
+}
+
+/* Neon Text Glows */
+.text-neon-violet {
+  color: var(--accent-primary);
+  text-shadow: 0 0 8px rgba(192, 132, 252, 0.4), 0 0 20px rgba(192, 132, 252, 0.2);
+}
+
+.text-neon-mint {
+  color: var(--accent-secondary);
+  text-shadow: 0 0 8px rgba(52, 211, 153, 0.4), 0 0 20px rgba(52, 211, 153, 0.2);
+}
+
+.border-neon {
+  border: 1px solid rgba(192, 132, 252, 0.4);
+  box-shadow: 0 0 15px rgba(192, 132, 252, 0.15);
+}
+
+/* Custom Scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-dark);
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--accent-primary);
+}
+
+/* Layout Utilities */
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.flex-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Animation Orbs */
+.orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(120px);
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.6;
+}
+
+.orb-violet {
+  background: var(--accent-primary);
+  width: 300px;
+  height: 300px;
+}
+
+.orb-mint {
+  background: var(--accent-secondary);
+  width: 250px;
+  height: 250px;
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); opacity: 0.5; }
+  50% { transform: scale(1.1); opacity: 0.7; }
+}
+
+.pulse-orb {
+  animation: pulse 8s ease-in-out infinite;
+}
