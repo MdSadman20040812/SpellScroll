@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+
+{% block title %}SpellScroll — Genre Explorer{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto px-4 sm:px-6 py-12 relative">
+    <div class="absolute top-1/4 left-1/4 w-80 h-80 bg-accentPrimary/5 rounded-full blur-[100px] pointer-events-none"></div>
+
+    <div class="text-center mb-10">
+        <h1 class="font-display text-3xl font-bold tracking-wider text-accentPrimary text-neon-violet">Genre Index</h1>
+        <p class="text-xs text-textMuted mt-1.5">Explore the database elements available in the webtoon catalog.</p>
+    </div>
+
+    <!-- Tag Cloud -->
+    <div class="bg-darkSurface border border-white/5 p-8 rounded-2xl shadow-xl flex flex-wrap justify-center gap-4">
+        {% for genre in genres %}
+        <a href="{% url 'feed_home' %}" class="flex items-center space-x-2 bg-darkBg hover:bg-accentPrimary/10 border border-white/5 hover:border-accentPrimary/30 px-5 py-3 rounded-xl transition duration-200 group">
+            <span class="font-bold text-sm text-textPrimary group-hover:text-accentPrimary transition">{{ genre.name }}</span>
+            <span class="text-[10px] font-bold bg-white/5 px-2 py-0.5 rounded text-textMuted group-hover:text-accentPrimary transition">{{ genre.count }}</span>
+        </a>
+        {% empty %}
+        <p class="text-xs text-textMuted py-4">No genres scraped yet. Run standard catalog updates in Admin panel.</p>
+        {% endfor %}
+    </div>
+
+</div>
+{% endblock %}

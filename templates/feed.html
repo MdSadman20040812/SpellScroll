@@ -1,0 +1,356 @@
+{% extends 'base.html' %}
+
+{% block title %}SpellScroll — Curation Feed{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 py-8" x-data="feedHandler()" x-init="initFeed()">
+    
+    <!-- Top Stats and Controls Banner -->
+    <div class="bg-darkSurface border border-white/5 p-6 rounded-2xl mb-8 flex flex-col md:flex-row items-center justify-between gap-6 relative overflow-hidden">
+        <div class="absolute top-0 right-0 w-64 h-64 bg-accentPrimary/5 rounded-full blur-[80px] pointer-events-none"></div>
+        
+        <div class="flex items-center space-x-4">
+            <div class="w-12 h-12 bg-accentPrimary/10 rounded-xl flex items-center justify-center text-accentPrimary border border-accentPrimary/20 text-lg">
+                <i class="fa-solid fa-scroll"></i>
+            </div>
+            <div>
+                <h2 class="text-xl font-bold tracking-tight">Your Personal Curation</h2>
+                <p class="text-xs text-textMuted mt-0.5">Recommendations refined by LangGraph multi-agent reinforcement.</p>
+            </div>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-3">
+            <!-- Cycle Info -->
+            <span class="text-xs font-semibold px-3 py-1.5 rounded-lg border border-white/10 bg-darkBg text-textPrimary/90">
+                Cycle: <span class="text-accentPrimary font-bold" x-text="cycleNumber">1</span>
+            </span>
+            <!-- Refresh / Expand Button -->
+            <button @click="expandFeed()" :disabled="expanding" 
+                    class="text-xs font-semibold bg-accentPrimary/10 border border-accentPrimary/30 hover:bg-accentPrimary hover:text-darkBg text-accentPrimary px-4 py-2 rounded-lg transition duration-200 flex items-center space-x-1.5 disabled:opacity-40">
+                <template x-if="!expanding">
+                    <i class="fa-solid fa-circle-notch animate-spin-slow"></i>
+                </template>
+                <template x-if="expanding">
+                    <i class="fa-solid fa-spinner animate-spin"></i>
+                </template>
+                <span x-text="expanding ? 'Expanding...' : 'Expand Feed'"></span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Active Genre Filters -->
+    <div class="flex items-center space-x-2 overflow-x-auto pb-4 mb-6 scrollbar-none">
+        <button @click="activeGenre = 'all'" :class="activeGenre === 'all' ? 'bg-accentPrimary text-darkBg border-accentPrimary' : 'bg-darkSurface text-textMuted border-white/5 hover:text-white'" class="text-xs font-semibold px-4 py-2 border rounded-full transition duration-200 shrink-0">
+            All Curations
+        </button>
+        <template x-for="genre in availableGenres">
+            <button @click="activeGenre = genre" :class="activeGenre === genre ? 'bg-accentPrimary text-darkBg border-accentPrimary' : 'bg-darkSurface text-textMuted border-white/5 hover:text-white'" class="text-xs font-semibold px-4 py-2 border rounded-full capitalize transition duration-200 shrink-0" x-text="genre">
+            </button>
+        </template>
+    </div>
+
+    <!-- Recommendations Grid -->
+    <div x-show="!loading && filteredWebtoons().length > 0" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6" x-cloak>
+        <template x-for="item in filteredWebtoons()" :key="item.id">
+            <div class="group bg-darkSurface border border-white/5 hover:border-accentPrimary/30 rounded-xl overflow-hidden shadow-lg transition duration-300 flex flex-col justify-between relative">
+                
+                <!-- Interaction overlays -->
+                <div class="absolute top-2 right-2 z-10 flex space-x-1">
+                    <span x-show="item.status === 'completed'" class="text-[9px] bg-emerald-500/90 text-darkBg font-bold uppercase tracking-wider px-2 py-0.5 rounded-full shadow">Completed</span>
+                    <span x-show="item.status === 'reading'" class="text-[9px] bg-blue-500/90 text-white font-bold uppercase tracking-wider px-2 py-0.5 rounded-full shadow">Reading</span>
+                    <span x-show="item.status === 'skipped'" class="text-[9px] bg-rose-500/90 text-white font-bold uppercase tracking-wider px-2 py-0.5 rounded-full shadow">Skipped</span>
+                </div>
+
+                <!-- Card Cover -->
+                <a :href="'/webtoon/' + item.slug + '/'" class="block relative aspect-[3/4] overflow-hidden bg-darkBg">
+                    <img :src="item.cover_url || 'https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?w=400'" 
+                         class="w-full h-full object-cover group-hover:scale-105 transition duration-500"
+                         @error="$el.src = 'https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?w=400'">
+                    
+                    <!-- Color rating bar at card bottom -->
+                    <div class="absolute bottom-0 left-0 right-0 h-1" :style="'background: linear-gradient(90deg, #A78BFA ' + (item.colour_rating * 100) + '%, #161622 0%)'"></div>
+                </a>
+
+                <!-- Card Content -->
+                <div class="p-4 flex-grow flex flex-col justify-between">
+                    <div>
+                        <!-- Genre tags -->
+                        <div class="flex flex-wrap gap-1 mb-2">
+                            <template x-for="genre in item.genres.slice(0, 2)">
+                                <span class="text-[9px] uppercase tracking-wider font-semibold bg-white/5 border border-white/10 px-2 py-0.5 rounded text-textMuted capitalize" x-text="genre"></span>
+                            </template>
+                        </div>
+                        
+                        <!-- Title -->
+                        <h3 class="font-bold text-sm tracking-wide text-textPrimary group-hover:text-accentPrimary transition truncate">
+                            <a :href="'/webtoon/' + item.slug + '/'" x-text="item.title"></a>
+                        </h3>
+                        
+                        <!-- AI Curation Reason -->
+                        <p class="text-[11px] text-textMuted mt-1.5 line-clamp-2 leading-relaxed" x-text="item.reason"></p>
+                    </div>
+
+                    <!-- Actions -->
+                    <div class="mt-4 pt-3 border-t border-white/5 flex items-center justify-between gap-1.5">
+                        <!-- Skip Button -->
+                        <button @click="skipWebtoon(item)" class="flex-1 text-center py-1.5 px-2 bg-darkBg hover:bg-rose-950/20 hover:text-rose-400 border border-white/5 hover:border-rose-500/20 text-textMuted text-xs font-semibold rounded transition">
+                            <i class="fa-solid fa-xmark mr-1"></i> Skip
+                        </button>
+                        
+                        <!-- Engage Option Popover -->
+                        <div class="relative flex-1" x-data="{ open: false }">
+                            <button @click="open = !open" class="w-full text-center py-1.5 px-2 bg-accentPrimary/10 border border-accentPrimary/30 hover:bg-accentPrimary hover:text-darkBg text-accentPrimary text-xs font-bold rounded transition">
+                                <i class="fa-solid fa-eye mr-1"></i> Read
+                            </button>
+                            <!-- Dropdown -->
+                            <div x-show="open" @click.away="open = false" class="absolute bottom-full mb-1 right-0 w-32 bg-darkSurface border border-white/10 rounded-lg shadow-xl py-1 z-20" x-cloak>
+                                <button @click="startReading(item); open = false" class="w-full text-left px-3 py-1.5 text-xs text-textPrimary hover:bg-white/5 flex items-center space-x-1.5">
+                                    <i class="fa-solid fa-book-open text-blue-400"></i> <span>Reading</span>
+                                </button>
+                                <button @click="openCompletedModal(item); open = false" class="w-full text-left px-3 py-1.5 text-xs text-textPrimary hover:bg-white/5 flex items-center space-x-1.5">
+                                    <i class="fa-solid fa-circle-check text-emerald-400"></i> <span>Completed</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </template>
+    </div>
+
+    <!-- Empty/Fallback States -->
+    <div x-show="!loading && filteredWebtoons().length === 0" class="text-center py-16 bg-darkSurface border border-dashed border-white/10 rounded-2xl" x-cloak>
+        <i class="fa-solid fa-magnifying-glass text-4xl text-textMuted/40 mb-4"></i>
+        <h3 class="font-bold text-lg">No Matching Webtoons</h3>
+        <p class="text-xs text-textMuted max-w-sm mx-auto mt-1">Try resetting filters, skipping active items, or running feed expansion to fetch new candidates.</p>
+        <button @click="expandFeed()" class="mt-4 bg-accentPrimary text-darkBg font-bold text-xs px-5 py-2.5 rounded-lg hover:bg-accentPrimary/90 transition">
+            Expand Catalog Discovery
+        </button>
+    </div>
+
+    <!-- Main Loading Spinner -->
+    <div x-show="loading" class="text-center py-24" x-cloak>
+        <div class="relative w-16 h-16 mx-auto mb-4">
+            <div class="absolute inset-0 rounded-full border-4 border-accentPrimary/20 border-t-accentPrimary animate-spin"></div>
+        </div>
+        <p class="text-xs text-textMuted">Reading taste profile data and fetching cards...</p>
+    </div>
+
+    <!-- Rating & Review Feedback Modal -->
+    <div x-show="modalOpen" class="fixed inset-0 bg-darkBg/80 backdrop-blur-sm z-50 flex items-center justify-center p-4" x-cloak>
+        <div class="max-w-md w-full bg-darkSurface border border-white/10 p-6 rounded-xl space-y-4" @click.away="modalOpen = false">
+            <div class="flex items-center justify-between border-b border-white/5 pb-3">
+                <h3 class="font-bold text-sm text-accentPrimary">Feedback: <span class="text-white" x-text="activeModalItem ? activeModalItem.title : ''"></span></h3>
+                <button @click="modalOpen = false" class="text-textMuted hover:text-white">&times;</button>
+            </div>
+            
+            <!-- Stars Selection -->
+            <div class="space-y-1.5">
+                <label class="block text-xs font-semibold uppercase tracking-wider text-textMuted">Rating</label>
+                <div class="flex space-x-2 text-2xl">
+                    <template x-for="star in [1, 2, 3, 4, 5]">
+                        <button @click="modalRating = star" class="focus:outline-none transition">
+                            <i class="fa-star" :class="star <= modalRating ? 'fa-solid text-amber-400' : 'fa-regular text-textMuted/40'"></i>
+                        </button>
+                    </template>
+                </div>
+            </div>
+
+            <!-- Review note -->
+            <div class="space-y-1.5">
+                <label class="block text-xs font-semibold uppercase tracking-wider text-textMuted">Review Notes</label>
+                <textarea x-model="modalNote" rows="3" class="w-full bg-darkBg border border-white/10 rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-accentPrimary text-white" placeholder="What did you like or dislike? Add details for the agent..."></textarea>
+            </div>
+
+            <div class="flex items-center space-x-3 pt-2">
+                <button @click="modalOpen = false" class="flex-1 py-2 bg-darkBg text-xs text-textPrimary/80 font-bold border border-white/5 hover:bg-white/5 rounded-lg transition">
+                    Cancel
+                </button>
+                <button @click="submitCompletedFeedback()" class="flex-1 py-2 bg-accentSecondary text-darkBg text-xs font-bold rounded-lg hover:bg-accentSecondary/90 transition shadow-[0_0_10px_rgba(52,211,153,0.2)]">
+                    Save Review
+                </button>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    function feedHandler() {
+        return {
+            webtoons: [],
+            availableGenres: [],
+            activeGenre: 'all',
+            loading: true,
+            expanding: false,
+            cycleNumber: 1,
+            ws: null,
+            
+            // Modal properties
+            modalOpen: false,
+            activeModalItem: null,
+            modalRating: 5,
+            modalNote: '',
+
+            async initFeed() {
+                this.loading = true;
+                await this.fetchFeed();
+                this.connectWebSocket();
+                this.loading = false;
+            },
+            async fetchFeed() {
+                try {
+                    const resp = await fetch('/api/v1/feed/current', {
+                        headers: {
+                            'Authorization': 'Bearer ' + '{{ jwt_token }}'
+                        }
+                    });
+                    if (resp.ok) {
+                        const data = await resp.json();
+                        this.webtoons = data.webtoons || [];
+                        this.cycleNumber = data.cycle_number || 1;
+                        this.extractGenres();
+                    }
+                } catch (e) {
+                    console.error('Fetch feed error:', e);
+                }
+            },
+            extractGenres() {
+                const genresSet = new Set();
+                this.webtoons.forEach(item => {
+                    if (item.genres) {
+                        item.genres.forEach(g => genresSet.add(g.toLowerCase()));
+                    }
+                });
+                this.availableGenres = Array.from(genresSet);
+            },
+            filteredWebtoons() {
+                if (this.activeGenre === 'all') {
+                    return this.webtoons;
+                }
+                return this.webtoons.filter(item => 
+                    item.genres && item.genres.map(g => g.toLowerCase()).includes(this.activeGenre)
+                );
+            },
+            async skipWebtoon(item) {
+                item.status = 'skipped';
+                try {
+                    await fetch('/api/v1/feed/feedback', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': '{{ csrf_token }}',
+                            'Authorization': 'Bearer ' + '{{ jwt_token }}'
+                        },
+                        body: JSON.stringify({
+                            webtoon_id: item.id,
+                            status: 'skipped',
+                            rating: 1,
+                            feedback_note: 'Skipped during discovery cycle.'
+                        })
+                    });
+                } catch (e) {
+                    console.error('Submit skip feedback error:', e);
+                }
+            },
+            async startReading(item) {
+                item.status = 'reading';
+                try {
+                    await fetch('/api/v1/feed/feedback', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': '{{ csrf_token }}',
+                            'Authorization': 'Bearer ' + '{{ jwt_token }}'
+                        },
+                        body: JSON.stringify({
+                            webtoon_id: item.id,
+                            status: 'reading',
+                            rating: 3,
+                            feedback_note: 'Marked as reading.'
+                        })
+                    });
+                } catch (e) {
+                    console.error('Submit reading status error:', e);
+                }
+            },
+            openCompletedModal(item) {
+                this.activeModalItem = item;
+                this.modalRating = 5;
+                this.modalNote = '';
+                this.modalOpen = true;
+            },
+            async submitCompletedFeedback() {
+                if (!this.activeModalItem) return;
+                const item = this.activeModalItem;
+                item.status = 'completed';
+                this.modalOpen = false;
+
+                try {
+                    await fetch('/api/v1/feed/feedback', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': '{{ csrf_token }}',
+                            'Authorization': 'Bearer ' + '{{ jwt_token }}'
+                        },
+                        body: JSON.stringify({
+                            webtoon_id: item.id,
+                            status: 'completed',
+                            rating: this.modalRating,
+                            feedback_note: this.modalNote
+                        })
+                    });
+                } catch (e) {
+                    console.error('Submit completed feedback error:', e);
+                }
+            },
+            async expandFeed() {
+                this.expanding = true;
+                try {
+                    const resp = await fetch('/api/v1/feed/expand', {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRFToken': '{{ csrf_token }}',
+                            'Authorization': 'Bearer ' + '{{ jwt_token }}'
+                        }
+                    });
+                    if (resp.ok) {
+                        const data = await resp.json();
+                        this.webtoons = data.webtoons || [];
+                        this.cycleNumber = data.cycle_number || this.cycleNumber + 1;
+                        this.extractGenres();
+                    }
+                } catch (e) {
+                    console.error('Expand feed error:', e);
+                }
+                this.expanding = false;
+            },
+            connectWebSocket() {
+                const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+                const user_id = '{{ request.user.id }}';
+                const token = '{{ jwt_token }}';
+                
+                const wsUrl = `${protocol}//${window.location.host}/ws/feed/${user_id}/?token=${token}`;
+                this.ws = new WebSocket(wsUrl);
+
+                this.ws.onmessage = (event) => {
+                    const msg = JSON.parse(event.data);
+                    if (msg.type === 'feed.update') {
+                        this.webtoons = msg.webtoons || [];
+                        this.extractGenres();
+                    } else if (msg.type === 'preference.updated') {
+                        console.log('Taste profile updated via socket:', msg.preferences);
+                    }
+                };
+
+                this.ws.onclose = () => {
+                    // Reconnect after 5s
+                    setTimeout(() => this.connectWebSocket(), 5000);
+                };
+            }
+        }
+    }
+</script>
+{% endblock %}

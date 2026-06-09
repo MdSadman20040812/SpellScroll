@@ -1,0 +1,16 @@
+django>=5.0
+fastapi
+uvicorn[standard]
+langgraph
+chromadb
+sentence-transformers
+channels>=4.0.0
+python-dotenv
+requests
+pyjwt
+argon2-cffi
+pydantic
+openai
+pytest
+httpx
+daphne

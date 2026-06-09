@@ -1,0 +1,141 @@
+{% extends 'base.html' %}
+
+{% block title %}SpellScroll — Complete Onboarding{% endblock %}
+
+{% block content %}
+<div class="relative min-h-[85vh] flex items-center justify-center py-12 px-4 overflow-hidden" x-data="onboardingHandler()">
+    <!-- Ambient Background Orbs -->
+    <div class="absolute top-1/4 right-1/4 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-accentPrimary/5 rounded-full blur-[120px] pointer-events-none"></div>
+    <div class="absolute bottom-1/4 left-1/4 translate-x-1/2 translate-y-1/2 w-96 h-96 bg-accentSecondary/5 rounded-full blur-[120px] pointer-events-none"></div>
+
+    <div class="max-w-2xl w-full bg-darkSurface border border-white/5 p-6 sm:p-8 rounded-2xl relative z-10 shadow-2xl">
+        
+        <!-- Step 1: Questionnaire -->
+        <div x-show="step === 1" class="space-y-6">
+            <div class="text-center mb-6">
+                <span class="text-[10px] uppercase font-bold tracking-widest text-accentPrimary bg-accentPrimary/10 border border-accentPrimary/20 px-3 py-1 rounded-full">Phase 1: Incantation</span>
+                <h2 class="text-2xl font-bold mt-4">Describe Your Perfect Webtoon</h2>
+                <p class="text-xs text-textMuted mt-1">Our agent will parse genres, tone preferences, art style preferences, and disliked themes.</p>
+            </div>
+            
+            <div class="space-y-4">
+                <label class="block text-xs font-semibold uppercase tracking-wider text-textMuted">Preferences & Tastes</label>
+                <textarea x-model="rawInput" rows="5" class="w-full bg-darkBg border border-white/10 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-accentPrimary transition text-white placeholder-textMuted/40" 
+                          placeholder="Example: I love dark fantasy with slow burn romance and detailed, high-contrast art styles. I absolutely hate tragedy and mecha themes..."></textarea>
+            </div>
+
+            <!-- Quick Suggestions Tags -->
+            <div class="space-y-2">
+                <span class="block text-[11px] font-semibold text-textMuted uppercase tracking-wider">Tap to insert suggestions</span>
+                <div class="flex flex-wrap gap-2">
+                    <template x-for="tag in quickTags">
+                        <button @click="insertTag(tag)" class="text-xs bg-darkBg hover:bg-accentPrimary/10 border border-white/5 hover:border-accentPrimary/30 px-3 py-1.5 rounded-full text-textPrimary/80 transition duration-200">
+                            + <span x-text="tag"></span>
+                        </button>
+                    </template>
+                </div>
+            </div>
+
+            <button @click="submitPreferences()" :disabled="!rawInput.trim()" 
+                    class="w-full bg-accentPrimary text-darkBg font-bold text-sm py-4 px-4 rounded-lg hover:bg-accentPrimary/90 disabled:opacity-40 disabled:pointer-events-none transition duration-300 transform active:scale-95 shadow-[0_0_20px_rgba(167,139,250,0.2)]">
+                Unscroll Recommendations <i class="fa-solid fa-wand-magic-sparkles ml-1"></i>
+            </button>
+        </div>
+
+        <!-- Step 2: Running Pipeline Loading State -->
+        <div x-show="step === 2" class="text-center py-12 space-y-6" x-cloak>
+            <div class="relative w-24 h-24 mx-auto">
+                <div class="absolute inset-0 rounded-full border-4 border-accentPrimary/20 border-t-accentPrimary animate-spin"></div>
+                <div class="absolute inset-2 rounded-full border-4 border-accentSecondary/10 border-t-accentSecondary animate-spin animate-reverse" style="animation-duration: 1.5s;"></div>
+                <div class="absolute inset-0 flex items-center justify-center">
+                    <i class="fa-solid fa-book-open text-2xl text-accentPrimary animate-pulse"></i>
+                </div>
+            </div>
+            
+            <div class="space-y-2 max-w-sm mx-auto">
+                <h3 class="text-lg font-bold text-accentPrimary">Weaving Your Universe</h3>
+                <p class="text-xs text-textMuted" x-text="loadingText">Extracting taste profile and loading database indexes...</p>
+            </div>
+        </div>
+
+        <!-- Step 3: Success Completed -->
+        <div x-show="step === 3" class="text-center py-12 space-y-6" x-cloak>
+            <div class="w-16 h-16 bg-accentSecondary/15 border border-accentSecondary/40 rounded-full flex items-center justify-center mx-auto text-accentSecondary text-3xl shadow-[0_0_15px_rgba(52,211,153,0.2)] animate-bounce">
+                <i class="fa-solid fa-check"></i>
+            </div>
+            <div class="space-y-2">
+                <h3 class="text-lg font-bold text-accentSecondary">Archive Prepared</h3>
+                <p class="text-xs text-textMuted">Your personalized feed cycle is ready for exploration.</p>
+            </div>
+            <a href="{% url 'feed_home' %}" class="inline-block bg-accentSecondary text-darkBg font-bold text-sm py-3 px-8 rounded-lg hover:bg-accentSecondary/90 transition shadow-[0_0_15px_rgba(52,211,153,0.3)]">
+                Access Feed <i class="fa-solid fa-arrow-right ml-1"></i>
+            </a>
+        </div>
+
+    </div>
+</div>
+
+<script>
+    function onboardingHandler() {
+        return {
+            step: 1,
+            rawInput: '',
+            loadingText: 'Consulting the Cerberus Oracle...',
+            quickTags: [
+                'Dark fantasy', 'Slow burn romance', 'Isekai magic', 'Vibrant action', 
+                'Comedy slice of life', 'Avoid mecha & gore', 'Psychological thriller'
+            ],
+            init() {
+                // Any page init
+            },
+            insertTag(tag) {
+                if (this.rawInput) {
+                    this.rawInput += ' ' + tag;
+                } else {
+                    this.rawInput = tag;
+                }
+            },
+            async submitPreferences() {
+                this.step = 2;
+                
+                // Rotate loading text items to show agent progression
+                const textInterval = setInterval(() => {
+                    const texts = [
+                        'Running onboarding preference cleaner...',
+                        'Scraping and cataloging colorful webtoons...',
+                        'Indexing titles in ChromaDB vector store...',
+                        'Building nearest-neighbor embeddings...',
+                        'Re-ranking catalog via Cerberus model...'
+                    ];
+                    this.loadingText = texts[Math.floor(Math.random() * texts.length)];
+                }, 2000);
+
+                try {
+                    const resp = await fetch('/api/v1/onboarding/preferences', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': '{{ csrf_token }}'
+                        },
+                        body: JSON.stringify({ preferences: this.rawInput })
+                    });
+                    
+                    clearInterval(textInterval);
+                    
+                    if (resp.ok) {
+                        this.step = 3;
+                    } else {
+                        const err = await resp.json();
+                        alert('Onboarding failed: ' + (err.detail || 'Unknown server error'));
+                        this.step = 1;
+                    }
+                } catch (e) {
+                    clearInterval(textInterval);
+                    alert('Network error connecting to backend: ' + e);
+                    this.step = 1;
+                }
+            }
+        }
+    }
+</script>
+{% endblock %}

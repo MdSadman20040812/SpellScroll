@@ -1,0 +1,134 @@
+{% extends 'base.html' %}
+
+{% block title %}SpellScroll — Spellmaster Dashboard{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 py-8 space-y-8">
+    
+    <!-- Header banner -->
+    <div class="bg-darkSurface border border-accentSecondary/20 p-6 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-4 shadow-[0_0_15px_rgba(52,211,153,0.05)]">
+        <div class="flex items-center space-x-4">
+            <div class="w-12 h-12 bg-accentSecondary/10 rounded-xl flex items-center justify-center text-accentSecondary border border-accentSecondary/20 text-lg">
+                <i class="fa-solid fa-crown"></i>
+            </div>
+            <div>
+                <h1 class="text-xl font-bold tracking-tight text-white">Spellmaster Admin Dashboard</h1>
+                <p class="text-xs text-textMuted mt-0.5">Control indexing, reset collections, and manage catalog mappings.</p>
+            </div>
+        </div>
+        
+        <div class="flex items-center space-x-3">
+            <!-- Reset Chroma -->
+            <form action="{% url 'admin_reset_chroma' %}" method="POST" onsubmit="return confirm('Resetting ChromaDB will delete all local vectors. Proceed?');">
+                {% csrf_token %}
+                <button type="submit" class="text-xs font-semibold bg-rose-950/20 hover:bg-rose-900 border border-rose-500/30 text-rose-300 px-4 py-2.5 rounded-lg transition duration-200">
+                    <i class="fa-solid fa-trash mr-1"></i> Reset Vector Store
+                </button>
+            </form>
+            <!-- Trigger Scrape -->
+            <form action="{% url 'admin_trigger_scrape' %}" method="POST">
+                {% csrf_token %}
+                <button type="submit" class="text-xs font-semibold bg-accentSecondary text-darkBg px-4 py-2.5 rounded-lg hover:bg-accentSecondary/90 transition shadow-[0_0_10px_rgba(52,211,153,0.2)]">
+                    <i class="fa-solid fa-arrows-rotate mr-1"></i> Trigger Seeding Scrape
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        
+        <!-- Left 1 Column: Users & Operating Cycles -->
+        <div class="lg:col-span-1 space-y-8">
+            <!-- Users List -->
+            <div class="bg-darkSurface border border-white/5 p-6 rounded-2xl shadow-lg space-y-4">
+                <h3 class="font-bold text-xs uppercase text-accentPrimary tracking-wider border-b border-white/5 pb-2">Registered Users ({{ users|length }})</h3>
+                <div class="divide-y divide-white/5 max-h-60 overflow-y-auto pr-1">
+                    {% for u in users %}
+                    <div class="py-3 flex flex-col space-y-0.5 text-xs">
+                        <div class="flex items-center justify-between">
+                            <span class="font-semibold text-white">{{ u.username }}</span>
+                            <span class="text-[9px] uppercase tracking-wider px-2 py-0.5 rounded {% if u.onboarding_complete %}bg-emerald-500/10 text-emerald-400{% else %}bg-amber-500/10 text-amber-400{% endif %}">
+                                {% if u.onboarding_complete %}Onboarded{% else %}Pending{% endif %}
+                            </span>
+                        </div>
+                        <span class="text-textMuted font-mono text-[10px] truncate">{{ u.preference_json_path }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Operating Cycles logs -->
+            <div class="bg-darkSurface border border-white/5 p-6 rounded-2xl shadow-lg space-y-4">
+                <h3 class="font-bold text-xs uppercase text-accentPrimary tracking-wider border-b border-white/5 pb-2">Operation Run Logger</h3>
+                <div class="divide-y divide-white/5 max-h-64 overflow-y-auto pr-1">
+                    {% for op in op_cycles %}
+                    <div class="py-2.5 flex justify-between items-center text-xs">
+                        <div class="flex flex-col space-y-0.5">
+                            <span class="font-semibold text-white capitalize">{{ op.phase }}</span>
+                            <span class="text-[10px] text-textMuted">{{ op.timestamp|date:"M d, H:i" }}</span>
+                        </div>
+                        {% if op.langsmith_trace_url %}
+                        <a href="{{ op.langsmith_trace_url }}" target="_blank" class="text-[10px] text-accentPrimary hover:underline">
+                            Trace Link <i class="fa-solid fa-arrow-up-right-from-square text-[9px]"></i>
+                        </a>
+                        {% endif %}
+                    </div>
+                    {% empty %}
+                    <p class="text-xs text-textMuted py-4 text-center">No runs logged yet.</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Right 2 Columns: Catalog Editor -->
+        <div class="lg:col-span-2 bg-darkSurface border border-white/5 p-6 rounded-2xl shadow-lg space-y-6">
+            <div class="flex items-center justify-between border-b border-white/5 pb-3">
+                <h3 class="font-bold text-xs uppercase text-accentPrimary tracking-wider">Master Webtoon Catalog (First 50)</h3>
+                <span class="text-xs text-textMuted">Total cataloged: {{ webtoons|length }}</span>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse text-xs">
+                    <thead>
+                        <tr class="border-b border-white/5 text-textMuted font-semibold">
+                            <th class="py-3 px-2">Title</th>
+                            <th class="py-3 px-2">Genres</th>
+                            <th class="py-3 px-2">Color Rating</th>
+                            <th class="py-3 px-2">Popularity</th>
+                            <th class="py-3 px-2">Status</th>
+                            <th class="py-3 px-2 text-right">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-white/5">
+                        {% for wt in webtoons %}
+                        <tr class="hover:bg-white/5 transition duration-150">
+                            <td class="py-3 px-2 font-semibold text-white">{{ wt.title }}</td>
+                            <td class="py-3 px-2 text-textMuted capitalize">
+                                {% for g in wt.genres|slice:":2" %}{{ g }}{% if not forloop.last %}, {% endif %}{% endfor %}
+                            </td>
+                            <td class="py-3 px-2 font-mono">{{ wt.colour_rating }}</td>
+                            <td class="py-3 px-2 font-mono">#{{ wt.popularity_rank }}</td>
+                            <td class="py-3 px-2">
+                                <span class="px-2 py-0.5 rounded text-[10px] uppercase font-bold {% if wt.is_active %}bg-emerald-500/10 text-emerald-400{% else %}bg-rose-500/10 text-rose-400{% endif %}">
+                                    {% if wt.is_active %}Active{% else %}Inactive{% endif %}
+                                </span>
+                            </td>
+                            <td class="py-3 px-2 text-right">
+                                <a href="{% url 'admin_edit_webtoon' wt.pk %}" class="text-accentPrimary hover:underline font-semibold">
+                                    <i class="fa-solid fa-pen-to-square"></i> Edit
+                                </a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" class="py-8 text-center text-textMuted">No catalog items. Run Seeding Scrape.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %}

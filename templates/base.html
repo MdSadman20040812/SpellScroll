@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#0D0D14">
+    <title>{% block title %}SpellScroll — AI Webtoon Discovery{% endblock %}</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700;900&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        darkBg: '#0D0D14',
+                        darkSurface: '#161622',
+                        accentPrimary: '#A78BFA',
+                        accentSecondary: '#34D399',
+                        textPrimary: '#F1F0FF',
+                        textMuted: '#6B6B8A',
+                    },
+                    fontFamily: {
+                        display: ['Cinzel', 'serif'],
+                        body: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Alpine.js -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- PWA Manifest & Meta -->
+    <link rel="manifest" href="/static/manifest.json">
+    <link rel="apple-touch-icon" href="/static/icons/icon-192.png">
+    
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0D0D14;
+            color: #F1F0FF;
+        }
+        .text-neon-violet {
+            text-shadow: 0 0 10px rgba(167, 139, 250, 0.5), 0 0 20px rgba(167, 139, 250, 0.3);
+        }
+        .text-neon-mint {
+            text-shadow: 0 0 10px rgba(52, 211, 153, 0.5), 0 0 20px rgba(52, 211, 153, 0.3);
+        }
+        .border-neon {
+            box-shadow: 0 0 15px rgba(167, 139, 250, 0.2);
+            border: 1px solid rgba(167, 139, 250, 0.4);
+        }
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0D0D14;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #161622;
+            border-radius: 4px;
+            border: 1px solid rgba(167, 139, 250, 0.2);
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(167, 139, 250, 0.3);
+        }
+    </style>
+</head>
+<body class="h-full flex flex-col justify-between overflow-x-hidden" x-data>
+
+    <!-- Top Navigation -->
+    <header class="bg-darkSurface/80 backdrop-blur-md border-b border-white/5 sticky top-0 z-50 px-4 sm:px-6 py-4 flex items-center justify-between">
+        <div class="flex items-center space-x-3">
+            <a href="/" class="font-display text-xl sm:text-2xl font-bold tracking-wider text-accentPrimary text-neon-violet">
+                SPELLSCROLL
+            </a>
+        </div>
+        
+        {% if request.user.is_authenticated %}
+        <nav class="hidden md:flex items-center space-x-6">
+            <a href="{% url 'feed_home' %}" class="text-sm font-medium hover:text-accentPrimary transition flex items-center space-x-2 {% if request.resolver_match.url_name == 'feed_home' %}text-accentPrimary{% else %}text-textPrimary/80{% endif %}">
+                <i class="fa-solid fa-scroll"></i> <span>Feed</span>
+            </a>
+            <a href="{% url 'genre_list' %}" class="text-sm font-medium hover:text-accentPrimary transition flex items-center space-x-2 {% if request.resolver_match.url_name == 'genre_list' %}text-accentPrimary{% else %}text-textPrimary/80{% endif %}">
+                <i class="fa-solid fa-tags"></i> <span>Genres</span>
+            </a>
+            <a href="{% url 'profile' %}" class="text-sm font-medium hover:text-accentPrimary transition flex items-center space-x-2 {% if request.resolver_match.url_name == 'profile' %}text-accentPrimary{% else %}text-textPrimary/80{% endif %}">
+                <i class="fa-solid fa-wand-magic-sparkles"></i> <span>Taste Profile</span>
+            </a>
+            {% if request.user.is_superuser or request.user.is_admin_user %}
+            <a href="{% url 'admin_dashboard' %}" class="text-sm font-medium hover:text-accentSecondary transition flex items-center space-x-2 text-neon-mint">
+                <i class="fa-solid fa-crown"></i> <span>Admin</span>
+            </a>
+            {% endif %}
+        </nav>
+        
+        <div class="flex items-center space-x-4">
+            <span class="hidden sm:inline text-xs text-textMuted">Hello, {{ request.user.display_name }}</span>
+            <a href="{% url 'logout' %}" class="text-xs font-semibold py-1.5 px-3 rounded-md border border-white/10 hover:border-red-500/30 text-textMuted hover:text-red-400 transition">
+                Logout
+            </a>
+        </div>
+        {% else %}
+        <div class="flex items-center space-x-2">
+            <span class="text-xs text-neon-violet border border-accentPrimary/20 bg-accentPrimary/5 px-2.5 py-1 rounded-full font-display uppercase tracking-widest">
+                Scroll Offline
+            </span>
+        </div>
+        {% endif %}
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-grow">
+        {% if messages %}
+        <div class="max-w-4xl mx-auto px-4 mt-4 space-y-2">
+            {% for message in messages %}
+            <div class="p-4 rounded-lg flex items-center justify-between text-sm {% if message.tags == 'success' %}bg-emerald-950/40 border border-emerald-500/30 text-emerald-300{% else %}bg-rose-950/40 border border-rose-500/30 text-rose-300{% endif %}">
+                <span>{{ message }}</span>
+                <button @click="$el.parentElement.remove()" class="hover:text-white">&times;</button>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+        
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Bottom Navigation (Mobile Only) -->
+    {% if request.user.is_authenticated %}
+    <div class="md:hidden sticky bottom-0 left-0 right-0 bg-darkSurface/95 border-t border-white/5 backdrop-blur-lg flex justify-around py-3 z-50">
+        <a href="{% url 'feed_home' %}" class="flex flex-col items-center space-y-1 {% if request.resolver_match.url_name == 'feed_home' %}text-accentPrimary{% else %}text-textMuted{% endif %}">
+            <i class="fa-solid fa-scroll text-lg"></i>
+            <span class="text-[10px]">Feed</span>
+        </a>
+        <a href="{% url 'genre_list' %}" class="flex flex-col items-center space-y-1 {% if request.resolver_match.url_name == 'genre_list' %}text-accentPrimary{% else %}text-textMuted{% endif %}">
+            <i class="fa-solid fa-tags text-lg"></i>
+            <span class="text-[10px]">Genres</span>
+        </a>
+        <a href="{% url 'profile' %}" class="flex flex-col items-center space-y-1 {% if request.resolver_match.url_name == 'profile' %}text-accentPrimary{% else %}text-textMuted{% endif %}">
+            <i class="fa-solid fa-wand-magic-sparkles text-lg"></i>
+            <span class="text-[10px]">Taste</span>
+        </a>
+    </div>
+    {% endif %}
+
+    <!-- Footer -->
+    <footer class="py-6 border-t border-white/5 text-center text-xs text-textMuted">
+        <p>© 2026 SpellScroll. Made for webtoon lovers. AI recommendation curation.</p>
+    </footer>
+
+    <!-- Service Worker Registration for PWA -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/static/sw.js')
+                    .then(reg => console.log('ServiceWorker registered', reg.scope))
+                    .catch(err => console.error('ServiceWorker registration failed', err));
+            });
+        }
+    </script>
+</body>
+</html>

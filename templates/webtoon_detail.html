@@ -1,0 +1,118 @@
+{% extends 'base.html' %}
+
+{% block title %}SpellScroll — {{ webtoon.title }}{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto px-4 sm:px-6 py-12 relative">
+    
+    <!-- Glow Background -->
+    <div class="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-accentPrimary/5 rounded-full blur-[140px] pointer-events-none"></div>
+
+    <!-- Back Button -->
+    <a href="{% url 'feed_home' %}" class="inline-flex items-center space-x-2 text-xs font-semibold text-textMuted hover:text-accentPrimary transition mb-6">
+        <i class="fa-solid fa-arrow-left"></i> <span>Return to feed</span>
+    </a>
+
+    <!-- Detail Box -->
+    <div class="bg-darkSurface border border-white/5 p-6 sm:p-8 rounded-2xl shadow-2xl relative z-10 grid grid-cols-1 md:grid-cols-3 gap-8">
+        
+        <!-- Left Column: Cover -->
+        <div class="space-y-4">
+            <div class="aspect-[3/4] rounded-xl overflow-hidden bg-darkBg border border-white/10 shadow-lg">
+                <img src="{{ webtoon.cover_url|default:'https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?w=400' }}" 
+                     class="w-full h-full object-cover"
+                     onerror="this.src='https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?w=400'">
+            </div>
+            
+            <!-- Color Rating bar -->
+            <div class="space-y-1.5">
+                <div class="flex items-center justify-between text-xs font-semibold">
+                    <span class="text-textMuted">Color Curation Value</span>
+                    <span class="text-accentPrimary">{% widthratio webtoon.colour_rating 1 100 %}%</span>
+                </div>
+                <div class="w-full h-2 bg-darkBg rounded-full overflow-hidden border border-white/5">
+                    <div class="h-full bg-accentPrimary" style="width: {% widthratio webtoon.colour_rating 1 100 %}%;"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column: Metadata & Details -->
+        <div class="md:col-span-2 space-y-6 flex flex-col justify-between">
+            <div>
+                <!-- Title & Genre Tags -->
+                <div class="space-y-2">
+                    <h1 class="text-2xl sm:text-3xl font-bold tracking-tight text-white">{{ webtoon.title }}</h1>
+                    
+                    <div class="flex flex-wrap gap-1.5 pt-1">
+                        {% for genre in webtoon.genres %}
+                        <span class="text-xs uppercase font-semibold bg-white/5 border border-white/10 text-textMuted px-2.5 py-0.5 rounded capitalize">
+                            {{ genre }}
+                        </span>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- Synopsis -->
+                <div class="space-y-2 pt-4">
+                    <h3 class="text-xs uppercase font-semibold text-accentPrimary tracking-wider">Synopsis</h3>
+                    <p class="text-sm text-textPrimary/90 leading-relaxed">{{ webtoon.synopsis_200w }}</p>
+                </div>
+
+                <!-- Source Link -->
+                {% if webtoon.source_url %}
+                <div class="pt-4">
+                    <a href="{{ webtoon.source_url }}" target="_blank" class="text-xs font-semibold text-accentSecondary hover:underline inline-flex items-center space-x-1">
+                        <span>Read on official source</span> <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Custom status logs if user logged -->
+            {% if user_status %}
+            <div class="p-4 bg-darkBg border border-white/5 rounded-xl space-y-2">
+                <span class="text-[10px] uppercase font-bold text-textMuted tracking-wider">Your Interaction Log</span>
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-semibold capitalize bg-accentPrimary/10 text-accentPrimary border border-accentPrimary/20 px-2.5 py-1 rounded">
+                        {{ user_status.status }}
+                    </span>
+                    {% if user_status.user_rating %}
+                    <div class="flex items-center space-x-1 text-xs text-amber-400 font-semibold">
+                        <i class="fa-solid fa-star"></i> <span>{{ user_status.user_rating }}/5</span>
+                    </div>
+                    {% endif %}
+                </div>
+                {% if user_status.feedback_note %}
+                <p class="text-xs text-textMuted italic pt-1">"{{ user_status.feedback_note }}"</p>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+
+    </div>
+
+    <!-- MangaDex Chapters Section -->
+    <div class="max-w-4xl mx-auto mt-8 bg-darkSurface border border-white/5 p-6 rounded-2xl shadow-xl relative z-10">
+        <h3 class="font-bold text-sm uppercase text-accentPrimary tracking-wider mb-4 flex items-center space-x-2">
+            <i class="fa-solid fa-book-open"></i> <span>MangaDex Feed Chapter Previews</span>
+        </h3>
+        
+        <div class="divide-y divide-white/5">
+            {% for ch in chapters %}
+            <a href="{{ ch.external_url }}" target="_blank" class="py-3.5 flex items-center justify-between hover:text-accentPrimary transition group text-sm">
+                <div class="flex items-center space-x-3">
+                    <span class="text-xs text-textMuted font-bold uppercase tracking-wider">Ch. {{ ch.chapter }}</span>
+                    <span class="font-medium text-textPrimary/95 group-hover:text-accentPrimary transition">{{ ch.title }}</span>
+                </div>
+                <div class="flex items-center space-x-1 text-xs text-textMuted group-hover:text-accentPrimary transition">
+                    <span>MangaDex Link</span> <i class="fa-solid fa-angle-right text-[10px]"></i>
+                </div>
+            </a>
+            {% empty %}
+            <p class="text-xs text-textMuted py-4">No chapter feed assets found on MangaDex for this ID.</p>
+            {% endfor %}
+        </div>
+    </div>
+
+</div>
+{% endblock %}

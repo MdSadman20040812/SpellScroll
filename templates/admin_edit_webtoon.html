@@ -1,0 +1,55 @@
+{% extends 'base.html' %}
+
+{% block title %}SpellScroll — Edit {{ webtoon.title }}{% endblock %}
+
+{% block content %}
+<div class="max-w-xl mx-auto px-4 sm:px-6 py-12">
+    
+    <a href="{% url 'admin_dashboard' %}" class="inline-flex items-center space-x-2 text-xs font-semibold text-textMuted hover:text-accentPrimary transition mb-6">
+        <i class="fa-solid fa-arrow-left"></i> <span>Return to dashboard</span>
+    </a>
+
+    <div class="bg-darkSurface border border-white/5 p-6 sm:p-8 rounded-2xl shadow-2xl space-y-6">
+        <h2 class="text-lg font-bold text-accentPrimary">Edit Catalog Webtoon</h2>
+        
+        <form action="{% url 'admin_edit_webtoon' webtoon.pk %}" method="POST" class="space-y-4">
+            {% csrf_token %}
+            <div>
+                <label class="block text-xs font-semibold uppercase tracking-wider text-textMuted mb-2">Webtoon Title</label>
+                <input type="text" name="title" value="{{ webtoon.title }}" required class="w-full bg-darkBg border border-white/10 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-accentPrimary transition text-white">
+            </div>
+            
+            <div>
+                <label class="block text-xs font-semibold uppercase tracking-wider text-textMuted mb-2">Genres (Comma separated)</label>
+                <input type="text" name="genres" value="{% for g in webtoon.genres %}{{ g }}{% if not forloop.last %}, {% endif %}{% endfor %}" required class="w-full bg-darkBg border border-white/10 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-accentPrimary transition text-white">
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-textMuted mb-2">Color rating (0.0 to 1.0)</label>
+                    <input type="number" step="0.01" name="colour_rating" value="{{ webtoon.colour_rating }}" required class="w-full bg-darkBg border border-white/10 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-accentPrimary transition text-white">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-textMuted mb-2">Popularity Rank</label>
+                    <input type="number" name="popularity_rank" value="{{ webtoon.popularity_rank }}" required class="w-full bg-darkBg border border-white/10 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-accentPrimary transition text-white">
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-xs font-semibold uppercase tracking-wider text-textMuted mb-2">Synopsis</label>
+                <textarea name="synopsis" rows="4" required class="w-full bg-darkBg border border-white/10 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-accentPrimary transition text-white">{{ webtoon.synopsis_200w }}</textarea>
+            </div>
+
+            <div class="flex items-center space-x-2 pt-2">
+                <input type="checkbox" name="is_active" id="is_active" {% if webtoon.is_active %}checked{% endif %} class="rounded bg-darkBg border-white/10 text-accentPrimary focus:ring-0">
+                <label for="is_active" class="text-xs font-semibold text-textPrimary uppercase tracking-wider">Active in catalog</label>
+            </div>
+
+            <button type="submit" class="w-full bg-accentPrimary text-darkBg font-bold text-sm py-3.5 px-4 rounded-lg hover:bg-accentPrimary/90 transition shadow-[0_0_15px_rgba(167,139,250,0.2)] pt-2">
+                Update Record
+            </button>
+        </form>
+    </div>
+
+</div>
+{% endblock %}

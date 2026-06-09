@@ -1,0 +1,174 @@
+{% extends 'base.html' %}
+
+{% block title %}SpellScroll — Your Taste Profile{% endblock %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto px-4 sm:px-6 py-10 relative">
+    <!-- Ambient glow -->
+    <div class="absolute top-1/4 right-1/4 w-[400px] h-[400px] bg-accentSecondary/5 rounded-full blur-[120px] pointer-events-none"></div>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+        
+        <!-- Left: Stats & Profile Summary -->
+        <div class="md:col-span-1 space-y-6">
+            <div class="bg-darkSurface border border-white/5 p-6 rounded-2xl shadow-xl">
+                <!-- User avatar -->
+                <div class="text-center space-y-3 pb-6 border-b border-white/5">
+                    <div class="w-16 h-16 bg-accentPrimary/15 border border-accentPrimary/30 rounded-2xl flex items-center justify-center text-accentPrimary text-2xl mx-auto shadow-inner">
+                        <i class="fa-solid fa-wand-magic-sparkles"></i>
+                    </div>
+                    <div>
+                        <h2 class="font-bold text-lg text-white">{{ request.user.display_name }}</h2>
+                        <span class="text-xs text-textMuted uppercase font-semibold tracking-wider">Scroll Weaver</span>
+                    </div>
+                </div>
+
+                <!-- Counts -->
+                <div class="grid grid-cols-3 gap-2 text-center pt-6">
+                    <div class="p-2 bg-darkBg border border-white/5 rounded-xl">
+                        <span class="block text-lg font-black text-emerald-400">{{ completed_count }}</span>
+                        <span class="text-[9px] uppercase tracking-wider text-textMuted font-bold">Done</span>
+                    </div>
+                    <div class="p-2 bg-darkBg border border-white/5 rounded-xl">
+                        <span class="block text-lg font-black text-blue-400">{{ reading_count }}</span>
+                        <span class="text-[9px] uppercase tracking-wider text-textMuted font-bold">Read</span>
+                    </div>
+                    <div class="p-2 bg-darkBg border border-white/5 rounded-xl">
+                        <span class="block text-lg font-black text-rose-400">{{ skipped_count }}</span>
+                        <span class="text-[9px] uppercase tracking-wider text-textMuted font-bold">Skip</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Taste Profile summary lists -->
+            <div class="bg-darkSurface border border-white/5 p-6 rounded-2xl shadow-xl space-y-4">
+                <h3 class="font-bold text-xs uppercase text-accentPrimary tracking-widest">Active Taste Schema</h3>
+                
+                {% if preferences %}
+                <div class="space-y-3 text-xs">
+                    <div class="space-y-1">
+                        <span class="text-[10px] uppercase font-bold text-textMuted tracking-wider">Cleaned Genres</span>
+                        <div class="flex flex-wrap gap-1">
+                            {% for genre in preferences.cleaned_genres %}
+                            <span class="bg-white/5 border border-white/10 px-2 py-0.5 rounded text-textPrimary capitalize">{{ genre }}</span>
+                            {% empty %}
+                            <span class="text-textMuted italic">None extraction logged.</span>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <div class="space-y-1">
+                        <span class="text-[10px] uppercase font-bold text-textMuted tracking-wider">Tone Preferences</span>
+                        <div class="flex flex-wrap gap-1">
+                            {% for tone in preferences.tone_preferences %}
+                            <span class="bg-white/5 border border-white/10 px-2 py-0.5 rounded text-textPrimary capitalize">{{ tone }}</span>
+                            {% empty %}
+                            <span class="text-textMuted italic">None extraction logged.</span>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <div class="space-y-1">
+                        <span class="text-[10px] uppercase font-bold text-textMuted tracking-wider">Art Styles</span>
+                        <div class="flex flex-wrap gap-1">
+                            {% for art in preferences.art_style_preferences %}
+                            <span class="bg-white/5 border border-white/10 px-2 py-0.5 rounded text-textPrimary capitalize">{{ art }}</span>
+                            {% empty %}
+                            <span class="text-textMuted italic">None extraction logged.</span>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    {% if preferences.disliked_themes %}
+                    <div class="space-y-1">
+                        <span class="text-[10px] uppercase font-bold text-textMuted tracking-wider">Disliked Themes</span>
+                        <div class="flex flex-wrap gap-1">
+                            {% for dislike in preferences.disliked_themes %}
+                            <span class="bg-rose-950/20 border border-rose-500/20 px-2 py-0.5 rounded text-rose-300 capitalize">{{ dislike }}</span>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+                {% else %}
+                <p class="text-xs text-textMuted italic">No taste schema mapped yet. Finish onboarding or rate items.</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Right: Radar Chart Visualization -->
+        <div class="md:col-span-2 bg-darkSurface border border-white/5 p-6 rounded-2xl shadow-xl flex flex-col justify-between">
+            <div class="pb-4 border-b border-white/5">
+                <h3 class="font-bold text-sm uppercase text-accentSecondary tracking-wider">Genre Affinity Vector Mapping</h3>
+                <p class="text-xs text-textMuted mt-0.5">Calculated from reading and positive/negative catalog evaluations.</p>
+            </div>
+            
+            <div class="flex-grow flex items-center justify-center p-4">
+                <div class="w-full max-w-sm aspect-square relative">
+                    <canvas id="genreRadarChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- Chart.js Library -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const labels = JSON.parse('{{ chart_labels|safe }}');
+        const dataVals = JSON.parse('{{ chart_data|safe }}');
+        
+        const ctx = document.getElementById('genreRadarChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'radar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Affinity Score',
+                    data: dataVals,
+                    backgroundColor: 'rgba(167, 139, 250, 0.2)',
+                    borderColor: 'rgba(167, 139, 250, 0.8)',
+                    borderWidth: 2,
+                    pointBackgroundColor: '#A78BFA',
+                    pointBorderColor: '#fff',
+                    pointHoverBackgroundColor: '#fff',
+                    pointHoverBorderColor: 'rgba(167, 139, 250, 1)'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    r: {
+                        angleLines: {
+                            color: 'rgba(255, 255, 255, 0.05)'
+                        },
+                        grid: {
+                            color: 'rgba(255, 255, 255, 0.05)'
+                        },
+                        pointLabels: {
+                            color: '#6B6B8A',
+                            font: {
+                                family: 'Inter',
+                                size: 11,
+                                weight: '500'
+                            }
+                        },
+                        ticks: {
+                            display: false,
+                            stepSize: 1
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                }
+            }
+        });
+    });
+</script>
+{% endblock %}
