@@ -3,7 +3,7 @@ import json
 import datetime
 from django.conf import settings
 from agents.state import AgentState
-from agents.nodes.preference_cleaner import call_cerberus_api
+from agents.nodes.preference_cleaner import call_cerebras_api
 from vector_store.chroma_client import chroma_client
 from apps.webtoons.models import Webtoon
 
@@ -43,7 +43,7 @@ def local_feedback_merge(prefs: dict, title: str, genres: list, rating: int, not
 
 def update_user_feedback(user_id: str, webtoon_id: str, rating: int, note: str) -> dict:
     """
-    Loads preferences.json, submits to Cerberus or local merge, saves, and re-embeds.
+    Loads preferences.json, submits to Cerebras or local merge, saves, and re-embeds.
     """
     # 1. Load preferences
     user_dir = os.path.join(settings.MEDIA_ROOT, 'users', user_id)
@@ -92,7 +92,7 @@ def update_user_feedback(user_id: str, webtoon_id: str, rating: int, note: str) 
     
     updated_profile = {}
     try:
-        content = call_cerberus_api(system_prompt, user_prompt, json_mode=True)
+        content = call_cerebras_api(system_prompt, user_prompt, json_mode=True)
         updated_profile = json.loads(content)
     except Exception as e:
         print(f"Feedback updater error: {e}. Executing rule-based reinforcement merge.")
@@ -103,7 +103,7 @@ def update_user_feedback(user_id: str, webtoon_id: str, rating: int, note: str) 
     prefs["tone_preferences"] = updated_profile.get("tone_preferences", prefs.get("tone_preferences", ["adventurous"]))
     prefs["art_style_preferences"] = updated_profile.get("art_style_preferences", prefs.get("art_style_preferences", ["vibrant"]))
     prefs["disliked_themes"] = updated_profile.get("disliked_themes", prefs.get("disliked_themes", []))
-    prefs["last_updated"] = datetime.datetime.utcnow().isoformat()
+    prefs["last_updated"] = datetime.datetime.now(datetime.timezone.utc).isoformat()
     
     # Save back to file
     os.makedirs(user_dir, exist_ok=True)

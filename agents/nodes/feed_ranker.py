@@ -1,7 +1,7 @@
 import json
 from django.conf import settings
 from agents.state import AgentState
-from agents.nodes.preference_cleaner import call_cerberus_api
+from agents.nodes.preference_cleaner import call_cerebras_api
 from apps.webtoons.models import Webtoon
 from apps.feed.models import FeedCycle
 
@@ -93,7 +93,7 @@ def rank_webtoons_node(state: AgentState) -> dict:
     
     ranked_results = []
     try:
-        content = call_cerberus_api(system_prompt, user_prompt, json_mode=True)
+        content = call_cerebras_api(system_prompt, user_prompt, json_mode=True)
         # Verify JSON
         data = json.loads(content)
         if isinstance(data, dict) and "rankings" in data:
@@ -103,7 +103,7 @@ def rank_webtoons_node(state: AgentState) -> dict:
         else:
             raise ValueError("Malformed response format")
     except Exception as e:
-        print(f"Cerberus Ranker Node error: {e}. Executing local fallback scoring.")
+        print(f"Cerebras Ranker Node error: {e}. Executing local fallback scoring.")
         ranked_results = calculate_local_ranking(prefs, candidates)
         
     # Map ranked IDs

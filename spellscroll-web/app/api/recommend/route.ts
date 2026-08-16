@@ -2,9 +2,9 @@ import { NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
 
-// Define Cerberus configurations
-const CERBERUS_API_KEY = process.env.CERBERUS_API_KEY || "csk-ewm9m3r8mkwwwn2d4kkp8r4wtp8kt66x4hxfp92ec9tyw4rw";
-const CERBERUS_API_URL = "https://api.cerberusai.io/v1/chat/completions";
+// Define Cerebras configurations
+const CEREBRAS_API_KEY = process.env.CEREBRAS_API_KEY || "csk-ewm9m3r8mkwwwn2d4kkp8r4wtp8kt66x4hxfp92ec9tyw4rw";
+const Cerebras_API_URL = "https://api.cerebras.ai/v1/chat/completions";
 
 interface WebtoonItem {
   id: string;
@@ -87,10 +87,10 @@ export async function POST(request: Request) {
     // Run local scoring vector to fetch top candidates
     const scoredCandidates = calculateLocalRanking(preferences, candidates);
     
-    // Slice top 10 items for Cerberus API re-ranking (token optimization)
+    // Slice top 10 items for Cerebras API re-ranking (token optimization)
     const topCandidates = scoredCandidates.slice(0, 10);
     
-    // Build Cerberus system prompts
+    // Build Cerebras system prompts
     const systemPrompt = 
       "You are a webtoon personalization ranking assistant. " +
       "Rank the candidate webtoons list based on user taste preferences. " +
@@ -111,14 +111,14 @@ export async function POST(request: Request) {
 
     let rankedList: any[] = [];
     try {
-      const apiResp = await fetch(CERBERUS_API_URL, {
+      const apiResp = await fetch(Cerebras_API_URL, {
         method: "POST",
         headers: {
-          "Authorization": `Bearer ${CERBERUS_API_KEY}`,
+          "Authorization": `Bearer ${CEREBRAS_API_KEY}`,
           "Content-Type": "application/json"
         },
         body: JSON.stringify({
-          model: "cerberus-l3-8b",
+          model: "llama3.1-8b",
           messages: [
             { "role": "system", "content": systemPrompt },
             { "role": "user", "content": userPrompt }
@@ -137,13 +137,13 @@ export async function POST(request: Request) {
           ? content 
           : (content.rankings || content.results || []);
       } else {
-        console.error("Cerberus API response error:", await apiResp.text());
+        console.error("Cerebras API response error:", await apiResp.text());
       }
     } catch (apiErr) {
-      console.error("Cerberus API request failed, executing local fallback ranking:", apiErr);
+      console.error("Cerebras API request failed, executing local fallback ranking:", apiErr);
     }
 
-    // Reconstruct feed matching Cerberus rankings or fall back to local scores
+    // Reconstruct feed matching Cerebras rankings or fall back to local scores
     let finalFeed = [];
     if (rankedList.length > 0) {
       const rankMap = new Map(rankedList.map(r => [r.id, r]));
@@ -160,7 +160,7 @@ export async function POST(request: Request) {
         })
         .sort((a, b) => a.rank - b.rank);
         
-      // Append remaining items that Cerberus did not return or skipped
+      // Append remaining items that Cerebras did not return or skipped
       const matchedIds = new Set(ordered.map(o => o.id));
       const remaining = topCandidates.filter(item => !matchedIds.has(item.id));
       finalFeed = [...ordered, ...remaining];

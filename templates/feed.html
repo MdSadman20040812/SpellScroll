@@ -3,113 +3,145 @@
 {% block title %}SpellScroll — Curation Feed{% endblock %}
 
 {% block content %}
-<div class="max-w-7xl mx-auto px-4 sm:px-6 py-8" x-data="feedHandler()" x-init="initFeed()">
+<style>
+    .webtoon-card {
+        transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.4s ease;
+    }
+    .webtoon-card:hover {
+        transform: translateY(-8px) scale(1.02);
+    }
+    .magical-spinner {
+        animation: rotate 2s linear infinite;
+    }
+    @keyframes rotate {
+        100% { transform: rotate(360deg); }
+    }
+    .card-gradient-overlay {
+        background: linear-gradient(to top, rgba(9, 9, 14, 0.95) 0%, rgba(9, 9, 14, 0) 40%);
+    }
+</style>
+
+<div class="max-w-7xl mx-auto px-4 sm:px-6 py-10" x-data="feedHandler()" x-init="initFeed()">
     
     <!-- Top Stats and Controls Banner -->
-    <div class="bg-darkSurface border border-white/5 p-6 rounded-2xl mb-8 flex flex-col md:flex-row items-center justify-between gap-6 relative overflow-hidden">
-        <div class="absolute top-0 right-0 w-64 h-64 bg-accentPrimary/5 rounded-full blur-[80px] pointer-events-none"></div>
+    <div class="glass-panel p-8 rounded-[2rem] mb-12 flex flex-col lg:flex-row items-center justify-between gap-8 relative overflow-hidden group">
+        <div class="absolute top-0 right-0 w-80 h-80 bg-accentPrimary/10 rounded-full blur-[100px] pointer-events-none group-hover:bg-accentPrimary/15 transition-all duration-700"></div>
+        <div class="absolute -bottom-20 -left-20 w-60 h-60 bg-accentSecondary/5 rounded-full blur-[80px] pointer-events-none"></div>
         
-        <div class="flex items-center space-x-4">
-            <div class="w-12 h-12 bg-accentPrimary/10 rounded-xl flex items-center justify-center text-accentPrimary border border-accentPrimary/20 text-lg">
-                <i class="fa-solid fa-scroll"></i>
+        <div class="flex items-center space-x-6 relative z-10">
+            <div class="w-16 h-16 bg-accentPrimary/10 rounded-2xl flex items-center justify-center text-accentPrimary border border-accentPrimary/20 shadow-[0_0_20px_rgba(167,139,250,0.15)] text-2xl group-hover:scale-110 transition-transform duration-500">
+                <i class="fa-solid fa-scroll animate-pulse"></i>
             </div>
             <div>
-                <h2 class="text-xl font-bold tracking-tight">Your Personal Curation</h2>
-                <p class="text-xs text-textMuted mt-0.5">Recommendations refined by LangGraph multi-agent reinforcement.</p>
+                <h2 class="font-display text-2xl sm:text-3xl font-black tracking-tight text-white">Your Weekly <span class="text-accentPrimary">Arcana</span></h2>
+                <p class="text-[11px] text-textMuted uppercase tracking-[0.2em] mt-1 font-bold">Neural Reinforcement Discovery Cycle</p>
             </div>
         </div>
 
-        <div class="flex flex-wrap items-center gap-3">
+        <div class="flex flex-wrap items-center gap-4 relative z-10">
             <!-- Cycle Info -->
-            <span class="text-xs font-semibold px-3 py-1.5 rounded-lg border border-white/10 bg-darkBg text-textPrimary/90">
-                Cycle: <span class="text-accentPrimary font-bold" x-text="cycleNumber">1</span>
-            </span>
+            <div class="flex flex-col items-center px-6 py-2 rounded-2xl bg-white/5 border border-white/10">
+                <span class="text-[9px] text-textMuted uppercase tracking-widest font-black">Current Cycle</span>
+                <span class="text-xl font-display font-black text-accentPrimary" x-text="cycleNumber">1</span>
+            </div>
+
             <!-- Refresh / Expand Button -->
             <button @click="expandFeed()" :disabled="expanding" 
-                    class="text-xs font-semibold bg-accentPrimary/10 border border-accentPrimary/30 hover:bg-accentPrimary hover:text-darkBg text-accentPrimary px-4 py-2 rounded-lg transition duration-200 flex items-center space-x-1.5 disabled:opacity-40">
+                    class="group/btn h-14 px-8 rounded-2xl bg-accentPrimary text-darkBg font-black text-xs uppercase tracking-[0.2em] flex items-center space-x-3 hover:bg-white transition-all duration-300 disabled:opacity-50 disabled:grayscale">
                 <template x-if="!expanding">
-                    <i class="fa-solid fa-circle-notch animate-spin-slow"></i>
+                    <i class="fa-solid fa-wand-sparkles text-lg group-hover/btn:rotate-12 transition-transform"></i>
                 </template>
                 <template x-if="expanding">
-                    <i class="fa-solid fa-spinner animate-spin"></i>
+                    <i class="fa-solid fa-circle-notch animate-spin text-lg"></i>
                 </template>
-                <span x-text="expanding ? 'Expanding...' : 'Expand Feed'"></span>
+                <span x-text="expanding ? 'Summoning...' : 'Expand Discovery'"></span>
             </button>
         </div>
     </div>
 
     <!-- Active Genre Filters -->
-    <div class="flex items-center space-x-2 overflow-x-auto pb-4 mb-6 scrollbar-none">
-        <button @click="activeGenre = 'all'" :class="activeGenre === 'all' ? 'bg-accentPrimary text-darkBg border-accentPrimary' : 'bg-darkSurface text-textMuted border-white/5 hover:text-white'" class="text-xs font-semibold px-4 py-2 border rounded-full transition duration-200 shrink-0">
-            All Curations
+    <div class="flex items-center space-x-3 overflow-x-auto pb-6 mb-8 scrollbar-none no-scrollbar">
+        <button @click="activeGenre = 'all'"
+                :class="activeGenre === 'all' ? 'bg-accentPrimary text-darkBg border-accentPrimary shadow-[0_0_15px_rgba(167,139,250,0.3)]' : 'bg-darkSurface text-textMuted border-white/5 hover:border-white/20'"
+                class="text-[10px] font-black uppercase tracking-widest px-6 py-3 border rounded-xl transition-all duration-300 shrink-0">
+            All Grimoires
         </button>
         <template x-for="genre in availableGenres">
-            <button @click="activeGenre = genre" :class="activeGenre === genre ? 'bg-accentPrimary text-darkBg border-accentPrimary' : 'bg-darkSurface text-textMuted border-white/5 hover:text-white'" class="text-xs font-semibold px-4 py-2 border rounded-full capitalize transition duration-200 shrink-0" x-text="genre">
+            <button @click="activeGenre = genre"
+                    :class="activeGenre === genre ? 'bg-accentPrimary text-darkBg border-accentPrimary shadow-[0_0_15px_rgba(167,139,250,0.3)]' : 'bg-darkSurface text-textMuted border-white/5 hover:border-white/20'"
+                    class="text-[10px] font-black uppercase tracking-widest px-6 py-3 border rounded-xl capitalize transition-all duration-300 shrink-0"
+                    x-text="genre">
             </button>
         </template>
     </div>
 
     <!-- Recommendations Grid -->
-    <div x-show="!loading && filteredWebtoons().length > 0" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6" x-cloak>
-        <template x-for="item in filteredWebtoons()" :key="item.id">
-            <div class="group bg-darkSurface border border-white/5 hover:border-accentPrimary/30 rounded-xl overflow-hidden shadow-lg transition duration-300 flex flex-col justify-between relative">
+    <div x-show="!loading && filteredWebtoons().length > 0" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6 sm:gap-8" x-cloak>
+        <template x-for="(item, index) in filteredWebtoons()" :key="item.id">
+            <div class="webtoon-card group bg-darkSurface border border-white/5 rounded-[1.5rem] overflow-hidden shadow-2xl flex flex-col relative"
+                 :style="'transition-delay: ' + (index * 50) + 'ms'">
                 
-                <!-- Interaction overlays -->
-                <div class="absolute top-2 right-2 z-10 flex space-x-1">
-                    <span x-show="item.status === 'completed'" class="text-[9px] bg-emerald-500/90 text-darkBg font-bold uppercase tracking-wider px-2 py-0.5 rounded-full shadow">Completed</span>
-                    <span x-show="item.status === 'reading'" class="text-[9px] bg-blue-500/90 text-white font-bold uppercase tracking-wider px-2 py-0.5 rounded-full shadow">Reading</span>
-                    <span x-show="item.status === 'skipped'" class="text-[9px] bg-rose-500/90 text-white font-bold uppercase tracking-wider px-2 py-0.5 rounded-full shadow">Skipped</span>
+                <!-- Status badges -->
+                <div class="absolute top-4 left-4 z-20 flex flex-col gap-2">
+                    <span x-show="item.status === 'completed'" class="text-[8px] bg-accentSecondary text-darkBg font-black uppercase tracking-widest px-3 py-1 rounded-full shadow-lg">Finished</span>
+                    <span x-show="item.status === 'reading'" class="text-[8px] bg-blue-500 text-white font-black uppercase tracking-widest px-3 py-1 rounded-full shadow-lg">Reading</span>
+                    <span x-show="item.status === 'skipped'" class="text-[8px] bg-rose-500 text-white font-black uppercase tracking-widest px-3 py-1 rounded-full shadow-lg">Archived</span>
+                </div>
+
+                <!-- Rank / Score Indicator -->
+                <div class="absolute top-4 right-4 z-20 w-8 h-8 rounded-lg glass-panel flex items-center justify-center border-accentPrimary/20">
+                    <span class="text-[10px] font-display font-black text-accentPrimary" x-text="'#' + (index + 1)"></span>
                 </div>
 
                 <!-- Card Cover -->
-                <a :href="'/webtoon/' + item.slug + '/'" class="block relative aspect-[3/4] overflow-hidden bg-darkBg">
-                    <img :src="item.cover_url || 'https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?w=400'" 
-                         class="w-full h-full object-cover group-hover:scale-105 transition duration-500"
-                         @error="$el.src = 'https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?w=400'">
+                <a :href="'/webtoon/' + item.slug + '/'" class="block relative aspect-[2/3] overflow-hidden bg-darkBg">
+                    <img :src="item.cover_url || 'https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?w=600'"
+                         class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                         @error="$el.src = 'https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?w=600'">
                     
-                    <!-- Color rating bar at card bottom -->
-                    <div class="absolute bottom-0 left-0 right-0 h-1" :style="'background: linear-gradient(90deg, #A78BFA ' + (item.colour_rating * 100) + '%, #161622 0%)'"></div>
+                    <div class="absolute inset-0 card-gradient-overlay opacity-80 group-hover:opacity-100 transition-opacity"></div>
+
+                    <!-- Genre tags on cover -->
+                    <div class="absolute bottom-4 left-4 right-4 flex flex-wrap gap-1.5">
+                        <template x-for="genre in item.genres.slice(0, 2)">
+                            <span class="text-[8px] font-black uppercase tracking-tighter bg-accentPrimary/20 backdrop-blur-md border border-accentPrimary/30 px-2 py-0.5 rounded text-accentPrimary" x-text="genre"></span>
+                        </template>
+                    </div>
                 </a>
 
                 <!-- Card Content -->
-                <div class="p-4 flex-grow flex flex-col justify-between">
-                    <div>
-                        <!-- Genre tags -->
-                        <div class="flex flex-wrap gap-1 mb-2">
-                            <template x-for="genre in item.genres.slice(0, 2)">
-                                <span class="text-[9px] uppercase tracking-wider font-semibold bg-white/5 border border-white/10 px-2 py-0.5 rounded text-textMuted capitalize" x-text="genre"></span>
-                            </template>
-                        </div>
-                        
-                        <!-- Title -->
-                        <h3 class="font-bold text-sm tracking-wide text-textPrimary group-hover:text-accentPrimary transition truncate">
-                            <a :href="'/webtoon/' + item.slug + '/'" x-text="item.title"></a>
-                        </h3>
-                        
-                        <!-- AI Curation Reason -->
-                        <p class="text-[11px] text-textMuted mt-1.5 line-clamp-2 leading-relaxed" x-text="item.reason"></p>
+                <div class="p-5 flex-grow flex flex-col justify-between bg-darkSurface">
+                    <div class="space-y-2">
+                        <h3 class="font-display text-base font-bold tracking-wide text-white group-hover:text-accentPrimary transition-colors truncate" x-text="item.title"></h3>
+                        <p class="text-[11px] text-textMuted line-clamp-3 leading-relaxed font-medium italic" x-text="'\"' + item.reason + '\"'"></p>
                     </div>
 
-                    <!-- Actions -->
-                    <div class="mt-4 pt-3 border-t border-white/5 flex items-center justify-between gap-1.5">
-                        <!-- Skip Button -->
-                        <button @click="skipWebtoon(item)" class="flex-1 text-center py-1.5 px-2 bg-darkBg hover:bg-rose-950/20 hover:text-rose-400 border border-white/5 hover:border-rose-500/20 text-textMuted text-xs font-semibold rounded transition">
-                            <i class="fa-solid fa-xmark mr-1"></i> Skip
+                    <!-- Action Bar -->
+                    <div class="mt-6 flex items-center gap-2">
+                        <button @click="skipWebtoon(item)" class="flex-1 h-10 bg-white/5 hover:bg-rose-500/10 border border-white/5 hover:border-rose-500/20 text-textMuted hover:text-rose-400 rounded-xl transition-all duration-300">
+                            <i class="fa-solid fa-ghost"></i>
                         </button>
                         
-                        <!-- Engage Option Popover -->
-                        <div class="relative flex-1" x-data="{ open: false }">
-                            <button @click="open = !open" class="w-full text-center py-1.5 px-2 bg-accentPrimary/10 border border-accentPrimary/30 hover:bg-accentPrimary hover:text-darkBg text-accentPrimary text-xs font-bold rounded transition">
-                                <i class="fa-solid fa-eye mr-1"></i> Read
+                        <div class="relative flex-[3]" x-data="{ open: false }">
+                            <button @click="open = !open" class="w-full h-10 bg-accentPrimary/10 border border-accentPrimary/20 hover:bg-accentPrimary hover:text-darkBg text-accentPrimary text-[10px] font-black uppercase tracking-widest rounded-xl transition-all duration-300">
+                                <i class="fa-solid fa-eye mr-2"></i> Unveil
                             </button>
                             <!-- Dropdown -->
-                            <div x-show="open" @click.away="open = false" class="absolute bottom-full mb-1 right-0 w-32 bg-darkSurface border border-white/10 rounded-lg shadow-xl py-1 z-20" x-cloak>
-                                <button @click="startReading(item); open = false" class="w-full text-left px-3 py-1.5 text-xs text-textPrimary hover:bg-white/5 flex items-center space-x-1.5">
+                            <div x-show="open" @click.away="open = false"
+                                 x-transition:enter="transition ease-out duration-200"
+                                 x-transition:enter-start="opacity-0 translate-y-2"
+                                 x-transition:enter-end="opacity-100 translate-y-0"
+                                 class="absolute bottom-full mb-3 right-0 w-40 glass-panel rounded-2xl shadow-2xl py-2 z-30" x-cloak>
+                                <button @click="startReading(item); open = false" class="w-full text-left px-4 py-2.5 text-[10px] font-bold uppercase tracking-wider text-textPrimary hover:bg-accentPrimary/10 flex items-center space-x-3 transition-colors">
                                     <i class="fa-solid fa-book-open text-blue-400"></i> <span>Reading</span>
                                 </button>
-                                <button @click="openCompletedModal(item); open = false" class="w-full text-left px-3 py-1.5 text-xs text-textPrimary hover:bg-white/5 flex items-center space-x-1.5">
-                                    <i class="fa-solid fa-circle-check text-emerald-400"></i> <span>Completed</span>
+                                <button @click="openCompletedModal(item); open = false" class="w-full text-left px-4 py-2.5 text-[10px] font-bold uppercase tracking-wider text-textPrimary hover:bg-accentPrimary/10 flex items-center space-x-3 transition-colors">
+                                    <i class="fa-solid fa-circle-check text-accentSecondary"></i> <span>Finished</span>
                                 </button>
+                                <div class="my-1 border-t border-white/5"></div>
+                                <a :href="'/webtoon/' + item.slug + '/'" class="w-full text-left px-4 py-2.5 text-[10px] font-bold uppercase tracking-wider text-accentPrimary hover:bg-accentPrimary/10 flex items-center space-x-3 transition-colors">
+                                    <i class="fa-solid fa-circle-info"></i> <span>Chronicle</span>
+                                </a>
                             </div>
                         </div>
                     </div>
@@ -120,55 +152,73 @@
     </div>
 
     <!-- Empty/Fallback States -->
-    <div x-show="!loading && filteredWebtoons().length === 0" class="text-center py-16 bg-darkSurface border border-dashed border-white/10 rounded-2xl" x-cloak>
-        <i class="fa-solid fa-magnifying-glass text-4xl text-textMuted/40 mb-4"></i>
-        <h3 class="font-bold text-lg">No Matching Webtoons</h3>
-        <p class="text-xs text-textMuted max-w-sm mx-auto mt-1">Try resetting filters, skipping active items, or running feed expansion to fetch new candidates.</p>
-        <button @click="expandFeed()" class="mt-4 bg-accentPrimary text-darkBg font-bold text-xs px-5 py-2.5 rounded-lg hover:bg-accentPrimary/90 transition">
-            Expand Catalog Discovery
+    <div x-show="!loading && filteredWebtoons().length === 0" class="text-center py-24 glass-panel border-dashed border-white/10 rounded-[3rem] animate-in fade-in zoom-in duration-700" x-cloak>
+        <div class="w-20 h-20 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-6">
+            <i class="fa-solid fa-wand-magic-sparkles text-4xl text-accentPrimary/20"></i>
+        </div>
+        <h3 class="font-display text-2xl font-black text-white">The Archive is Silent</h3>
+        <p class="text-xs text-textMuted max-w-sm mx-auto mt-3 font-medium uppercase tracking-widest">Adjust your essence or expand the discovery ritual to find new scrolls.</p>
+        <button @click="expandFeed()" class="mt-8 bg-accentPrimary text-darkBg font-black text-[10px] uppercase tracking-[0.2em] px-10 py-4 rounded-2xl hover:bg-white transition-all duration-300 shadow-[0_0_20px_rgba(167,139,250,0.3)]">
+            Begin Summoning
         </button>
     </div>
 
     <!-- Main Loading Spinner -->
-    <div x-show="loading" class="text-center py-24" x-cloak>
-        <div class="relative w-16 h-16 mx-auto mb-4">
-            <div class="absolute inset-0 rounded-full border-4 border-accentPrimary/20 border-t-accentPrimary animate-spin"></div>
+    <div x-show="loading" class="text-center py-32" x-cloak>
+        <div class="relative w-24 h-24 mx-auto mb-8">
+            <div class="absolute inset-0 rounded-full border-[3px] border-accentPrimary/10 border-t-accentPrimary magical-spinner"></div>
+            <div class="absolute inset-4 rounded-full border-[2px] border-accentSecondary/10 border-b-accentSecondary magical-spinner" style="animation-direction: reverse; animation-duration: 1.5s;"></div>
+            <div class="absolute inset-0 flex items-center justify-center">
+                <i class="fa-solid fa-scroll text-accentPrimary/40 animate-pulse"></i>
+            </div>
         </div>
-        <p class="text-xs text-textMuted">Reading taste profile data and fetching cards...</p>
+        <p class="font-display text-sm tracking-[0.4em] text-accentPrimary uppercase animate-pulse">Decoding Taste Signatures...</p>
     </div>
 
     <!-- Rating & Review Feedback Modal -->
-    <div x-show="modalOpen" class="fixed inset-0 bg-darkBg/80 backdrop-blur-sm z-50 flex items-center justify-center p-4" x-cloak>
-        <div class="max-w-md w-full bg-darkSurface border border-white/10 p-6 rounded-xl space-y-4" @click.away="modalOpen = false">
-            <div class="flex items-center justify-between border-b border-white/5 pb-3">
-                <h3 class="font-bold text-sm text-accentPrimary">Feedback: <span class="text-white" x-text="activeModalItem ? activeModalItem.title : ''"></span></h3>
-                <button @click="modalOpen = false" class="text-textMuted hover:text-white">&times;</button>
+    <div x-show="modalOpen" class="fixed inset-0 bg-darkBg/90 backdrop-blur-md z-50 flex items-center justify-center p-6"
+         x-transition:enter="transition ease-out duration-300"
+         x-transition:enter-start="opacity-0 scale-95"
+         x-transition:enter-end="opacity-100 scale-100"
+         x-cloak>
+        <div class="max-w-md w-full glass-panel border-white/10 p-8 rounded-[2.5rem] space-y-8 relative shadow-[0_0_50px_rgba(167,139,250,0.1)]" @click.away="modalOpen = false">
+            <div class="flex items-center justify-between">
+                <div class="space-y-1">
+                    <h3 class="font-display text-xl font-black text-white">Scroll <span class="text-accentPrimary">Feedback</span></h3>
+                    <p class="text-[10px] text-textMuted uppercase tracking-widest font-bold" x-text="activeModalItem ? activeModalItem.title : ''"></p>
+                </div>
+                <button @click="modalOpen = false" class="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-textMuted hover:text-white transition-colors">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
             </div>
             
             <!-- Stars Selection -->
-            <div class="space-y-1.5">
-                <label class="block text-xs font-semibold uppercase tracking-wider text-textMuted">Rating</label>
-                <div class="flex space-x-2 text-2xl">
+            <div class="space-y-3">
+                <label class="block text-[10px] font-black uppercase tracking-[0.2em] text-textMuted">Power Rating</label>
+                <div class="flex justify-between items-center bg-darkBg/50 p-4 rounded-2xl border border-white/5">
                     <template x-for="star in [1, 2, 3, 4, 5]">
-                        <button @click="modalRating = star" class="focus:outline-none transition">
-                            <i class="fa-star" :class="star <= modalRating ? 'fa-solid text-amber-400' : 'fa-regular text-textMuted/40'"></i>
+                        <button @click="modalRating = star" class="group focus:outline-none transition-all duration-300 transform active:scale-90">
+                            <i class="fa-star text-3xl transition-all"
+                               :class="star <= modalRating ? 'fa-solid text-amber-400 scale-110 drop-shadow-[0_0_8px_rgba(251,191,36,0.5)]' : 'fa-regular text-textMuted/20 group-hover:text-textMuted/40'"></i>
                         </button>
                     </template>
                 </div>
             </div>
 
             <!-- Review note -->
-            <div class="space-y-1.5">
-                <label class="block text-xs font-semibold uppercase tracking-wider text-textMuted">Review Notes</label>
-                <textarea x-model="modalNote" rows="3" class="w-full bg-darkBg border border-white/10 rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-accentPrimary text-white" placeholder="What did you like or dislike? Add details for the agent..."></textarea>
+            <div class="space-y-3">
+                <label class="block text-[10px] font-black uppercase tracking-[0.2em] text-textMuted">Scribe your thoughts</label>
+                <textarea x-model="modalNote" rows="4"
+                          class="w-full bg-darkBg/50 border border-white/5 rounded-2xl px-5 py-4 text-xs font-medium focus:outline-none focus:border-accentPrimary/40 text-white placeholder-textMuted/30 transition-all"
+                          placeholder="What resonance did this scroll leave?"></textarea>
             </div>
 
-            <div class="flex items-center space-x-3 pt-2">
-                <button @click="modalOpen = false" class="flex-1 py-2 bg-darkBg text-xs text-textPrimary/80 font-bold border border-white/5 hover:bg-white/5 rounded-lg transition">
-                    Cancel
+            <div class="flex items-center space-x-4 pt-4">
+                <button @click="modalOpen = false" class="flex-1 h-12 rounded-2xl bg-white/5 text-[10px] text-textMuted font-black uppercase tracking-widest hover:bg-white/10 transition-all">
+                    Dismiss
                 </button>
-                <button @click="submitCompletedFeedback()" class="flex-1 py-2 bg-accentSecondary text-darkBg text-xs font-bold rounded-lg hover:bg-accentSecondary/90 transition shadow-[0_0_10px_rgba(52,211,153,0.2)]">
-                    Save Review
+                <button @click="submitCompletedFeedback()" class="flex-1 h-12 rounded-2xl bg-accentSecondary text-darkBg text-[10px] font-black uppercase tracking-widest hover:shadow-[0_0_20px_rgba(52,211,153,0.3)] transition-all">
+                    Preserve Review
                 </button>
             </div>
         </div>
@@ -223,7 +273,7 @@
                         item.genres.forEach(g => genresSet.add(g.toLowerCase()));
                     }
                 });
-                this.availableGenres = Array.from(genresSet);
+                this.availableGenres = Array.from(genresSet).sort();
             },
             filteredWebtoons() {
                 if (this.activeGenre === 'all') {
@@ -247,7 +297,7 @@
                             webtoon_id: item.id,
                             status: 'skipped',
                             rating: 1,
-                            feedback_note: 'Skipped during discovery cycle.'
+                            feedback_note: 'Archived from discovery.'
                         })
                     });
                 } catch (e) {
@@ -268,7 +318,7 @@
                             webtoon_id: item.id,
                             status: 'reading',
                             rating: 3,
-                            feedback_note: 'Marked as reading.'
+                            feedback_note: 'Began reading the chronicle.'
                         })
                     });
                 } catch (e) {
@@ -346,7 +396,6 @@
                 };
 
                 this.ws.onclose = () => {
-                    // Reconnect after 5s
                     setTimeout(() => this.connectWebSocket(), 5000);
                 };
             }

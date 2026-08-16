@@ -1,7 +1,5 @@
 import os
 import django
-from django.core.asgi import get_wsgi_application
-
 # Set settings module
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'spellscroll.settings')
 django.setup()

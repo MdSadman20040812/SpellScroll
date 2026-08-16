@@ -42,6 +42,7 @@
             <!-- Register Form -->
             <form x-show="!isLogin" action="{% url 'register' %}" method="POST" class="space-y-4" x-cloak>
                 {% csrf_token %}
+                {% csrf_token %}
                 <div>
                     <label class="block text-xs font-semibold uppercase tracking-wider text-textMuted mb-2">Username</label>
                     <input type="text" name="username" required class="w-full bg-darkBg border border-white/10 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-accentPrimary transition text-white">

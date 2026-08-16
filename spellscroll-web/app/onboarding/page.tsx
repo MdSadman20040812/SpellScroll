@@ -42,7 +42,7 @@ export default function OnboardingPage() {
       'Extracting taste vector indices...',
       'Matching genres and tones...',
       'Mapping color preferences...',
-      'Cerberus NLP aligning configurations...'
+      'Cerebras NLP aligning configurations...'
     ];
     
     let textIndex = 0;

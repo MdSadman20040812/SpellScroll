@@ -6,18 +6,18 @@ from django.conf import settings
 from agents.state import AgentState
 from vector_store.chroma_client import chroma_client
 
-def call_cerberus_api(system_prompt: str, user_prompt: str, json_mode: bool = True) -> str:
-    api_key = getattr(settings, 'CERBERUS_API_KEY', 'mock_key')
+def call_cerebras_api(system_prompt: str, user_prompt: str, json_mode: bool = True) -> str:
+    api_key = getattr(settings, 'CEREBRAS_API_KEY', 'mock_key')
     if api_key == 'mock_key' or not api_key:
-        raise ValueError("Cerberus API Key is mock or unset.")
+        raise ValueError("Cerebras API Key is mock or unset.")
         
-    url = "https://api.cerberusai.io/v1/chat/completions"
+    url = "https://api.cerebras.ai/v1/chat/completions"
     headers = {
         "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json"
     }
     data = {
-        "model": "cerberus-l3-8b",
+        "model": "llama3.1-8b",
         "messages": [
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_prompt}
@@ -31,7 +31,7 @@ def call_cerberus_api(system_prompt: str, user_prompt: str, json_mode: bool = Tr
     if resp.status_code == 200:
         return resp.json()['choices'][0]['message']['content']
     else:
-        raise Exception(f"Cerberus API returned {resp.status_code}: {resp.text}")
+        raise Exception(f"Cerebras API returned {resp.status_code}: {resp.text}")
 
 def extract_preferences_fallback(raw_input: str) -> dict:
     genres = ["action", "fantasy", "romance", "comedy", "slice of life", "thriller", "historical", "isekai", "sci-fi", "horror", "drama", "mystery", "superhero"]
@@ -69,10 +69,10 @@ def clean_onboarding_preferences(state: AgentState) -> dict:
     
     cleaned_data = {}
     try:
-        content = call_cerberus_api(system_prompt, user_prompt, json_mode=True)
+        content = call_cerebras_api(system_prompt, user_prompt, json_mode=True)
         cleaned_data = json.loads(content)
     except Exception as e:
-        print(f"Cerberus onboarding preference cleaner error: {e}. Executing rule-based fallback.")
+        print(f"Cerebras onboarding preference cleaner error: {e}. Executing rule-based fallback.")
         cleaned_data = extract_preferences_fallback(raw_input)
         
     # Standardize output preferences payload
@@ -84,7 +84,7 @@ def clean_onboarding_preferences(state: AgentState) -> dict:
         "art_style_preferences": cleaned_data.get("art_style_preferences", ["webtoon"]),
         "disliked_themes": cleaned_data.get("disliked_themes", []),
         "vector_embedding_id": f"pref_{user_id}",
-        "last_updated": datetime.datetime.utcnow().isoformat()
+        "last_updated": datetime.datetime.now(datetime.timezone.utc).isoformat()
     }
     
     # Save preferences.json to media/users/{user_id}/

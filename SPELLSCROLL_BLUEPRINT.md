@@ -1,13 +1,13 @@
 # SPELLSCROLL — Full System Design Blueprint
 **Version:** 1.0 MVP  
 **Target Agent:** Cursor / GitHub Copilot / Google AI Studio / Any agentic IDE  
-**Stack Summary:** Django + FastAPI · LangGraph · ChromaDB · Cerberus API · MangaDex API · WebSockets · SQLite + JSON hybrid · LangSmith  
+**Stack Summary:** Django + FastAPI · LangGraph · ChromaDB · Cerebras API · MangaDex API · WebSockets · SQLite + JSON hybrid · LangSmith  
 
 ---
 
 ## 1. PROJECT OVERVIEW
 
-Spellscroll is a personalized, AI-curated colourful webtoon discovery and tracking platform. It operates as a **Django web app (PC)** with a **FastAPI REST backend** integrated in-process. The entire recommendation intelligence is powered by a **LangGraph multi-agent pipeline** backed by **Cerberus API** (free tier, 4 000-token packet limit), with **ChromaDB** as the local vector store and **MangaDex API** for webtoon card assets. The system is designed for offline-first, privacy-respecting local operation, optionally exposable as a hosted Django web service.
+Spellscroll is a personalized, AI-curated colourful webtoon discovery and tracking platform. It operates as a **Django web app (PC)** with a **FastAPI REST backend** integrated in-process. The entire recommendation intelligence is powered by a **LangGraph multi-agent pipeline** backed by **Cerebras API** (free tier, 4 000-token packet limit), with **ChromaDB** as the local vector store and **MangaDex API** for webtoon card assets. The system is designed for offline-first, privacy-respecting local operation, optionally exposable as a hosted Django web service.
 
 ---
 
@@ -18,7 +18,7 @@ Spellscroll is a personalized, AI-curated colourful webtoon discovery and tracki
 | Web Framework | Django 5.x (renders pages, session management) |
 | REST API | FastAPI (mounted inside Django via `WSGIMiddleware` or run as sidecar) |
 | AI Orchestration | LangGraph (stateful multi-agent graph) |
-| LLM Provider | Cerberus API (free tier, model: `cerberus-l3-8b` or equivalent) |
+| LLM Provider | Cerebras API (free tier, model: `llama3.1-8b` or equivalent) |
 | Vector Store | ChromaDB (persistent local, two collections) |
 | Embedding Model | `sentence-transformers/all-MiniLM-L6-v2` via HuggingFace (local, no API cost) |
 | Relational DB | SQLite (dev) / PostgreSQL (prod) via Django ORM |
@@ -32,7 +32,7 @@ Spellscroll is a personalized, AI-curated colourful webtoon discovery and tracki
 | Task Queue | Celery + Redis (background scraping jobs) |
 
 **Free API Keys Required (obtain before starting):**
-- `CERBERUS_API_KEY` — https://cerberusai.io (free tier)
+- `CEREBRAS_API_KEY` — https://cerebras.ai (free tier)
 - `MANGADEX_CLIENT_ID` + `MANGADEX_CLIENT_SECRET` — https://api.mangadex.org (public, no key for read)
 - `SERPAPI_KEY` — https://serpapi.com (100 free searches/month)
 - `LANGSMITH_API_KEY` — https://smith.langchain.com (free)
@@ -84,7 +84,7 @@ spellscroll/
 │   ├── chroma_client.py          # Two ChromaDB collections
 │   ├── collections/
 │   │   ├── webtoon_universe.py   # 300+ scraped webtoons (main)
-│   │   └── context_window_db.py  # Cerberus context-window substitute
+│   │   └── context_window_db.py  # Cerebras context-window substitute
 │   └── embedder.py               # Local MiniLM embeddings
 ├── media/
 │   └── users/{user_id}/
@@ -144,7 +144,7 @@ langgraph_run_id (CharField), langsmith_trace_url (URL), metadata (JSON), timest
 
 ### 4.2 JSON Document Store (under `media/users/{id}/`)
 
-**`preferences.json`** — Cerberus-cleaned user preference object:
+**`preferences.json`** — Cerebras-cleaned user preference object:
 ```json
 {
   "user_id": "uuid",
@@ -215,14 +215,14 @@ AgentState:
   │
   ▼
 [onboarding_node]
-  Calls Cerberus API with user's raw preference text.
+  Calls Cerebras API with user's raw preference text.
   System prompt: "Extract genre, tone, art style preferences. 
   Return strict JSON only. Under 400 tokens."
   Writes output → preferences.json, embeds in ChromaDB context_window_db.
   │
   ▼ (parallel fork)
   ├──[webtoon_scraper_node]───────────────────────────────────┐
-  │   Calls Cerberus API: "Search and return 300 popular      │
+  │   Calls Cerebras API: "Search and return 300 popular      │
   │   colourful webtoon titles as JSON array."                │
   │   Token budget: 2 batches × 2000 tokens.                 │
   │   Falls back to SerpAPI: query="top colourful webtoons    │
@@ -241,17 +241,17 @@ AgentState:
   Upserts into ChromaDB collection: "webtoon_universe".
   Also embeds preferences.json → same collection for cross-query.
   Context-window substitute: embed full scraped text into 
-  "context_window_db" collection (used to avoid hitting Cerberus token limits).
+  "context_window_db" collection (used to avoid hitting Cerebras token limits).
   │
   ▼
 [rag_retriever_node]
   Query ChromaDB "webtoon_universe" with preferences embedding.
   Retrieve top 20 nearest neighbours.
-  Pass IDs to Cerberus API for re-ranking:
+  Pass IDs to Cerebras API for re-ranking:
   "Given user prefers {cleaned_genres}, rank these 20 webtoons.
   Return JSON: [{id, rank, reason_50_words}]"
   Token-efficient: use context_window_db to inject summaries instead
-  of raw text (stays under 4000-token Cerberus limit).
+  of raw text (stays under 4000-token Cerebras limit).
   Emit top_20_ids → FeedCycle record created in SQL.
   │
   ▼
@@ -264,7 +264,7 @@ AgentState:
   ▼
 [feedback_collector_node]
   On each "Completed" click: prompt user for 1-5 rating + note.
-  Cerberus API: "Update preference profile. Old: {prefs}. 
+  Cerebras API: "Update preference profile. Old: {prefs}. 
   New feedback: {feedback_log}. Return updated JSON."
   Writes updated preferences.json. Re-embeds in ChromaDB.
   │
@@ -279,16 +279,16 @@ AgentState:
               Celery background task.
               SerpAPI: "best colourful webtoons 2024 reddit"
               Reddit JSON API: r/webtoons/top.json?limit=100
-              Cerberus: parse + clean 100 new titles.
+              Cerebras: parse + clean 100 new titles.
               Embed + upsert into "webtoon_universe" ChromaDB.
               Trigger rag_retriever_node with refreshed DB.
 ```
 
-### Cerberus API Token Optimisation Strategy
-- Never pass raw HTML to Cerberus. Always pre-summarise with local MiniLM embeddings + ChromaDB retrieval first.
-- Use `context_window_db` ChromaDB collection as a "memory injection" layer: retrieve the 3 most relevant webtoon summaries (each ≤ 150 words) and inject into the Cerberus prompt instead of full documents.
-- Keep all Cerberus system prompts ≤ 500 tokens. User content ≤ 3 000 tokens. Total ≤ 3 800 (safe under 4 000 limit).
-- Use streaming (`stream=True`) on Cerberus where supported to reduce perceived latency.
+### Cerebras API Token Optimisation Strategy
+- Never pass raw HTML to Cerebras. Always pre-summarise with local MiniLM embeddings + ChromaDB retrieval first.
+- Use `context_window_db` ChromaDB collection as a "memory injection" layer: retrieve the 3 most relevant webtoon summaries (each ≤ 150 words) and inject into the Cerebras prompt instead of full documents.
+- Keep all Cerebras system prompts ≤ 500 tokens. User content ≤ 3 000 tokens. Total ≤ 3 800 (safe under 4 000 limit).
+- Use streaming (`stream=True`) on Cerebras where supported to reduce perceived latency.
 
 LangSmith tracing enabled via:
 ```python
@@ -410,7 +410,7 @@ POST   /webhooks/reddit/            → Receive new post events from r/webtoons
 ## 12. CELERY BACKGROUND TASKS
 
 `tasks/scrape_tasks.py`:
-- `task: scrape_webtoons_from_web(user_id)` — full scrape pipeline (SerpAPI + Reddit + Cerberus clean). Runs silently. On completion, calls `embedding_node` and pushes `scrape.status` WebSocket event.
+- `task: scrape_webtoons_from_web(user_id)` — full scrape pipeline (SerpAPI + Reddit + Cerebras clean). Runs silently. On completion, calls `embedding_node` and pushes `scrape.status` WebSocket event.
 - `task: refresh_mangadex_covers()` — periodic task (weekly), re-fetches cover URLs via MangaDex for all active webtoons.
 - `task: reembed_preferences(user_id)` — re-embeds updated preferences.json after feedback loop.
 
@@ -423,7 +423,7 @@ Celery broker: Redis (`redis://localhost:6379/0`). Beat scheduler for periodic t
 The agent must also produce:
 
 ### `README.md` (What Was Built)
-Sections: Project Summary · Architecture Overview · Key Design Decisions · LangGraph Pipeline Walkthrough · ChromaDB Collections Explained · Cerberus Token Strategy · Known Limitations + Future Work.
+Sections: Project Summary · Architecture Overview · Key Design Decisions · LangGraph Pipeline Walkthrough · ChromaDB Collections Explained · Cerebras Token Strategy · Known Limitations + Future Work.
 
 ### `BACKEND_SETUP.md` (Beginner Server Setup)
 Step-by-step: Install Python 3.11 → Create virtualenv → `pip install -r requirements.txt` → Set `.env` variables (all API keys) → `python manage.py migrate` → `python manage.py collectstatic` → Start Redis → Start Celery worker → Start Django: `python manage.py runserver` → Access at `http://localhost:8000`. Each step has a "what this does" plain-language explanation.
@@ -436,7 +436,7 @@ Step-by-step: Install Python 3.11 → Create virtualenv → `pip install -r requ
 SECRET_KEY=django-secret-key-here
 DEBUG=True
 DATABASE_URL=sqlite:///db.sqlite3
-CERBERUS_API_KEY=your_cerberus_key
+CEREBRAS_API_KEY=your_cerebras_key
 MANGADEX_CLIENT_ID=your_mangadex_id
 MANGADEX_CLIENT_SECRET=your_mangadex_secret
 SERPAPI_KEY=your_serpapi_key
@@ -458,10 +458,10 @@ MEDIA_ROOT=./media
 2. SQLite schema (all models) + Django admin registration
 3. FastAPI mount inside Django + JWT auth dependency
 4. ChromaDB client + both collections initialised + MiniLM embedder
-5. LangGraph `onboarding_node` + `preference_cleaner` with Cerberus API
+5. LangGraph `onboarding_node` + `preference_cleaner` with Cerebras API
 6. `webtoon_scraper_node` (SerpAPI + Reddit) + `mangadex_fetch_node`
 7. `embedding_node` (upsert all webtoons into ChromaDB)
-8. `rag_retriever_node` + `feed_ranker_node` with Cerberus re-ranking
+8. `rag_retriever_node` + `feed_ranker_node` with Cerebras re-ranking
 9. Django Channels WebSocket consumer + Alpine.js global state connection
 10. Frontend: all 6 pages templated with Tailwind (dark ambient design)
 11. `feedback_collector_node` + preferences.json update loop

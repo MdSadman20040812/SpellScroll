@@ -220,7 +220,7 @@ export default function FeedPage() {
             </div>
             <div>
               <h2 style={styles.bannerTitle}>Your Personal Curation</h2>
-              <p style={styles.bannerDesc}>Recommendations computed via client-side vector similarity and re-ranked with Cerberus.</p>
+              <p style={styles.bannerDesc}>Recommendations computed via client-side vector similarity and re-ranked with Cerebras.</p>
             </div>
           </div>
 
@@ -256,7 +256,7 @@ export default function FeedPage() {
         {loading && (
           <div style={styles.loadingBox}>
             <div style={styles.spinner}></div>
-            <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem', marginTop: 12 }}>Consulting the Cerberus Oracle...</p>
+            <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem', marginTop: 12 }}>Consulting the Cerebras Oracle...</p>
           </div>
         )}
 

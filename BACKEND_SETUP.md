@@ -41,10 +41,12 @@ pip install -r requirements.txt
 ---
 
 ## 4. Setup Environment Variables
-Copy the environmental file template:
-```bash
-# Verify that '.env' exists in the root folder.
-# Customize any keys if available (e.g. CERBERUS_API_KEY, SERPAPI_KEY).
+Create a file named `.env` in the root folder and add your keys:
+```ini
+CEREBRAS_API_KEY=csk-ewm9m3r8mkwwwn2d4kkp8r4wtp8kt66x4hxfp92ec9tyw4rw
+SERPAPI_KEY=your_serpapi_key
+SECRET_KEY=your_secret_key
+DEBUG=True
 ```
 *What this does:* Configures local credentials, SQLite paths, and flags. By default, mock overrides are configured, enabling the server to run fully offline without any API keys.
 

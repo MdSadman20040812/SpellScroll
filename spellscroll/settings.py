@@ -123,7 +123,7 @@ CHANNEL_LAYERS = {
 }
 
 # API configuration keys loaded from .env
-CERBERUS_API_KEY = os.getenv('CERBERUS_API_KEY', 'mock_key')
+CEREBRAS_API_KEY = os.getenv('CEREBRAS_API_KEY', 'mock_key')
 SERPAPI_KEY = os.getenv('SERPAPI_KEY', 'mock_key')
 LANGSMITH_API_KEY = os.getenv('LANGSMITH_API_KEY', 'mock_key')
 MANGADEX_CLIENT_ID = os.getenv('MANGADEX_CLIENT_ID')
