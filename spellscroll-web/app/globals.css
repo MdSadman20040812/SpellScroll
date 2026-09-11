@@ -1,130 +1,158 @@
-/* Reset and Global Styles */
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
+/* ==========================================================================
+   spellscroll-web global styles
 
+   The design system itself lives at ../static/css/ in the repository root and
+   is copied into app/styles/ by `npm run sync:design` (wired into predev and
+   prebuild).  Editing app/styles/*.css directly will be overwritten - change
+   static/css/tokens.css or static/css/spellscroll.css instead, so both
+   frontends move together.
+   ========================================================================== */
+
+@import './styles/tokens.css';
+@import './styles/spellscroll.css';
+
+/* --------------------------------------------------------------------------
+   Next.js font wiring.  next/font exposes the families as CSS variables with
+   its own generated names, so map them onto the design-system tokens.
+   -------------------------------------------------------------------------- */
 :root {
-  --bg-dark: #07070a;
-  --surface-dark: #0e0e15;
-  --surface-card: #161622;
-  --accent-primary: #c084fc;
-  --accent-secondary: #34d399;
-  --text-primary: #fafafa;
-  --text-muted: #71717a;
-  --border-glow: rgba(192, 132, 252, 0.15);
-  --font-display: 'Cinzel', serif;
-  --font-body: 'Inter', sans-serif;
+  --font-body: var(--font-inter), ui-sans-serif, system-ui, -apple-system,
+    'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-display: var(--font-cinzel), 'Iowan Old Style', Georgia, serif;
 }
 
-html, body {
-  background-color: var(--bg-dark);
-  color: var(--text-primary);
-  font-family: var(--font-body);
+/* next/font generates its own family names, so the wordmark rule from the
+   shared stylesheet (which names "Cinzel Decorative" literally) is re-pointed
+   at the variable next/font produced. */
+.logo__word {
+  font-family: var(--font-cinzel-decorative), var(--font-display);
+}
+
+/* --------------------------------------------------------------------------
+   App-shell pieces specific to this frontend.
+   -------------------------------------------------------------------------- */
+.app-shell {
+  display: flex;
+  flex-direction: column;
   min-height: 100vh;
-  overflow-x: hidden;
 }
 
-/* Glassmorphism Styles */
-.glass-panel {
-  background: rgba(22, 22, 34, 0.75);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  border-radius: 16px;
-  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+.hero-split {
+  display: grid;
+  gap: var(--space-10);
+  padding-block: var(--space-16) var(--space-12);
+}
+@media (min-width: 940px) {
+  .hero-split {
+    grid-template-columns: 1.05fr 0.95fr;
+    align-items: center;
+    gap: var(--space-16);
+    padding-block: var(--space-20) var(--space-16);
+  }
 }
 
-.glass-card {
-  background: rgba(22, 22, 34, 0.6);
-  backdrop-filter: blur(8px);
-  border: 1px solid rgba(255, 255, 255, 0.03);
-  border-radius: 12px;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+.cover-wall {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-3);
+  max-height: 560px;
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(to bottom, transparent, #000 12%, #000 84%, transparent);
+  mask-image: linear-gradient(to bottom, transparent, #000 12%, #000 84%, transparent);
+}
+.cover-wall__col {
+  display: grid;
+  gap: var(--space-3);
+  animation: drift 42s linear infinite;
+}
+.cover-wall__col:nth-child(2) { animation-duration: 54s; animation-direction: reverse; }
+.cover-wall__col:nth-child(3) { animation-duration: 48s; }
+@keyframes drift {
+  from { transform: translateY(0); }
+  to { transform: translateY(-50%); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cover-wall__col { animation: none; }
+}
+.cover-wall img {
+  width: 100%;
+  aspect-ratio: 2 / 3;
+  object-fit: cover;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
 }
 
-.glass-card:hover {
-  border-color: rgba(192, 132, 252, 0.3);
-  box-shadow: 0 0 20px rgba(192, 132, 252, 0.1);
-  transform: translateY(-2px);
+.feature-grid {
+  display: grid;
+  gap: var(--space-5);
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+}
+.feature {
+  padding: var(--space-6);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+}
+.feature__icon {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  margin-bottom: var(--space-4);
+  border-radius: var(--radius-md);
+  background: var(--accent-soft);
+  color: var(--accent);
 }
 
-/* Neon Text Glows */
-.text-neon-violet {
-  color: var(--accent-primary);
-  text-shadow: 0 0 8px rgba(192, 132, 252, 0.4), 0 0 20px rgba(192, 132, 252, 0.2);
+.seed-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(168px, 1fr));
+  gap: var(--space-2);
 }
-
-.text-neon-mint {
-  color: var(--accent-secondary);
-  text-shadow: 0 0 8px rgba(52, 211, 153, 0.4), 0 0 20px rgba(52, 211, 153, 0.2);
-}
-
-.border-neon {
-  border: 1px solid rgba(192, 132, 252, 0.4);
-  box-shadow: 0 0 15px rgba(192, 132, 252, 0.15);
-}
-
-/* Custom Scrollbars */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-
-::-webkit-scrollbar-track {
-  background: var(--bg-dark);
-}
-
-::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 3px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: var(--accent-primary);
-}
-
-/* Layout Utilities */
-.container {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 0 20px;
-}
-
-.flex-center {
+.seed {
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+  text-align: left;
+  line-height: var(--leading-snug);
+  cursor: pointer;
+  transition: all var(--duration-fast) var(--ease-out);
+}
+.seed:hover { border-color: var(--border-strong); color: var(--text-primary); }
+.seed[aria-pressed='true'] {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  color: var(--accent);
+  font-weight: var(--weight-semibold);
 }
 
-/* Animation Orbs */
-.orb {
-  position: absolute;
-  border-radius: 50%;
-  filter: blur(120px);
-  pointer-events: none;
-  z-index: 0;
-  opacity: 0.6;
+.mini-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+  gap: var(--space-3);
 }
-
-.orb-violet {
-  background: var(--accent-primary);
-  width: 300px;
-  height: 300px;
+.mini {
+  display: block;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  border: 1px solid var(--border);
+  transition: transform var(--duration-fast) var(--ease-out),
+    border-color var(--duration-fast) var(--ease-out);
 }
+.mini:hover { transform: translateY(-3px); border-color: var(--border-accent); }
+.mini img { width: 100%; aspect-ratio: 2 / 3; object-fit: cover; }
 
-.orb-mint {
-  background: var(--accent-secondary);
-  width: 250px;
-  height: 250px;
-}
-
-@keyframes pulse {
-  0%, 100% { transform: scale(1); opacity: 0.5; }
-  50% { transform: scale(1.1); opacity: 0.7; }
-}
-
-.pulse-orb {
-  animation: pulse 8s ease-in-out infinite;
+/* Profile: sidebar beside the main column on wide screens. */
+@media (min-width: 940px) {
+  .profile-grid {
+    grid-template-columns: minmax(0, 1fr) 340px;
+    gap: var(--space-12) !important;
+  }
 }

@@ -6,6 +6,11 @@ class FeedCycle(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='feed_cycles')
     cycle_number = models.IntegerField(default=1)
     webtoons_suggested = models.JSONField(default=list)  # List of Webtoon UUID strings
+    # {webtoon_id: rationale}.  Kept on the cycle rather than only in the
+    # vector store: without ChromaDB installed that store is an in-process
+    # dict, so every restart wiped the reasons and the feed fell back to a
+    # generic string.  A cycle's rationale belongs to the cycle anyway.
+    reasons = models.JSONField(default=dict, blank=True)
     all_skipped = models.BooleanField(default=False)
     fallback_triggered = models.BooleanField(default=False)
     scrape_expansion_triggered = models.BooleanField(default=False)

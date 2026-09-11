@@ -1,77 +1,258 @@
 {% extends 'base.html' %}
+{% load static %}
 
-{% block title %}SpellScroll — Unlock Your Magic Catalog{% endblock %}
+{% block title %}SpellScroll — AI Webtoon Discovery{% endblock %}
+{% block description %}A taste-driven reading feed for colourful webtoons. Tell SpellScroll what you like in plain language and it curates the archive around you.{% endblock %}
+
+{% block head %}
+<style>
+  .landing-hero {
+    display: grid;
+    gap: var(--space-10);
+    padding-block: var(--space-16) var(--space-12);
+  }
+  @media (min-width: 940px) {
+    .landing-hero {
+      grid-template-columns: 1.05fr 0.95fr;
+      align-items: center;
+      gap: var(--space-16);
+      padding-block: var(--space-20) var(--space-16);
+    }
+  }
+
+  /* Marquee of real cover art from the live catalogue: the product's actual
+     content is the strongest thing we can put on the page. */
+  .cover-wall {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--space-3);
+    max-height: 560px;
+    overflow: hidden;
+    -webkit-mask-image: linear-gradient(to bottom, transparent, #000 12%, #000 84%, transparent);
+    mask-image: linear-gradient(to bottom, transparent, #000 12%, #000 84%, transparent);
+  }
+  .cover-wall__col { display: grid; gap: var(--space-3); animation: drift 42s linear infinite; }
+  .cover-wall__col:nth-child(2) { animation-duration: 54s; animation-direction: reverse; }
+  .cover-wall__col:nth-child(3) { animation-duration: 48s; }
+  @keyframes drift {
+    from { transform: translateY(0); }
+    to { transform: translateY(-50%); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .cover-wall__col { animation: none; }
+  }
+  .cover-wall img {
+    width: 100%;
+    aspect-ratio: 2 / 3;
+    object-fit: cover;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border);
+  }
+
+  .feature-grid {
+    display: grid;
+    gap: var(--space-5);
+    grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  }
+  .feature {
+    padding: var(--space-6);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+  }
+  .feature__icon {
+    display: grid;
+    place-items: center;
+    width: 40px;
+    height: 40px;
+    margin-bottom: var(--space-4);
+    border-radius: var(--radius-md);
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+
+  .auth-card { max-width: 460px; margin-inline: auto; }
+  .auth-tabs {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-1);
+    padding: var(--space-1);
+    background: var(--surface-raised);
+    border-radius: var(--radius-md);
+    margin-bottom: var(--space-6);
+  }
+  .auth-tabs button {
+    min-height: 40px;
+    background: none;
+    border: 0;
+    border-radius: var(--radius-sm);
+    color: var(--text-muted);
+    font-size: var(--text-sm);
+    font-weight: var(--weight-semibold);
+    cursor: pointer;
+    transition: all var(--duration-fast) var(--ease-out);
+  }
+  .auth-tabs button[aria-selected="true"] {
+    background: var(--bg-elevated);
+    color: var(--text-primary);
+    box-shadow: var(--shadow-sm);
+  }
+</style>
+{% endblock %}
 
 {% block content %}
-<div class="relative min-h-[85vh] flex items-center justify-center py-12 px-4 overflow-hidden">
-    <!-- Neon Background Orbs -->
-    <div class="absolute top-1/4 left-1/4 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-accentPrimary/10 rounded-full blur-[120px] pointer-events-none"></div>
-    <div class="absolute bottom-1/4 right-1/4 translate-x-1/2 translate-y-1/2 w-96 h-96 bg-accentSecondary/10 rounded-full blur-[120px] pointer-events-none"></div>
+<div class="container">
 
-    <div class="max-w-md w-full bg-darkSurface border border-white/5 p-8 rounded-2xl relative z-10 shadow-2xl" x-data="{ isLogin: true }">
-        
-        <!-- Header -->
-        <div class="text-center mb-8">
-            <h1 class="font-display text-4xl font-black tracking-widest text-accentPrimary text-neon-violet mb-2">
-                SPELLSCROLL
-            </h1>
-            <p class="text-sm text-textMuted font-medium tracking-wide">
-                AI-curated colorful webtoon discovery
-            </p>
+  <section class="landing-hero">
+    <div class="stack-lg">
+      <div class="stack">
+        <p class="eyebrow eyebrow--accent">Multi-agent curation &middot; {{ catalogue_count }} colourful series</p>
+        <h1 class="title-hero">
+          Your next obsession,<br>
+          <span class="accent-text">read before you find it.</span>
+        </h1>
+        <p class="lede">
+          Describe what you love in your own words. A LangGraph agent pipeline turns that
+          into a taste signature, searches a vector index of full-colour webtoons, and
+          rebuilds your feed every time you react to a card.
+        </p>
+      </div>
+
+      <div class="row row--wrap">
+        <a class="btn btn--primary btn--lg" href="#enter">
+          <svg width="18" height="18" aria-hidden="true"><use href="#i-sparkles"></use></svg>
+          Start reading
+        </a>
+        <a class="btn btn--lg" href="{% url 'genre_list' %}">Browse the archive</a>
+      </div>
+
+      <dl class="stat-grid">
+        <div class="stat">
+          <dd class="stat__value accent-text">{{ catalogue_count }}</dd>
+          <dt class="stat__label">Series in the archive</dt>
         </div>
-
-        <!-- Forms -->
-        <div class="space-y-6">
-            <!-- Login Form -->
-            <form x-show="isLogin" action="{% url 'login' %}" method="POST" class="space-y-4">
-                {% csrf_token %}
-                <div>
-                    <label class="block text-xs font-semibold uppercase tracking-wider text-textMuted mb-2">Username</label>
-                    <input type="text" name="username" required class="w-full bg-darkBg border border-white/10 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-accentPrimary transition text-white">
-                </div>
-                <div>
-                    <label class="block text-xs font-semibold uppercase tracking-wider text-textMuted mb-2">Password</label>
-                    <input type="password" name="password" required class="w-full bg-darkBg border border-white/10 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-accentPrimary transition text-white">
-                </div>
-                
-                <button type="submit" class="w-full bg-accentPrimary text-darkBg font-bold text-sm py-3 px-4 rounded-lg hover:bg-accentPrimary/90 transition duration-300 transform active:scale-95 shadow-[0_0_15px_rgba(167,139,250,0.3)] mt-2">
-                    Enter the Archive
-                </button>
-            </form>
-
-            <!-- Register Form -->
-            <form x-show="!isLogin" action="{% url 'register' %}" method="POST" class="space-y-4" x-cloak>
-                {% csrf_token %}
-                {% csrf_token %}
-                <div>
-                    <label class="block text-xs font-semibold uppercase tracking-wider text-textMuted mb-2">Username</label>
-                    <input type="text" name="username" required class="w-full bg-darkBg border border-white/10 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-accentPrimary transition text-white">
-                </div>
-                <div>
-                    <label class="block text-xs font-semibold uppercase tracking-wider text-textMuted mb-2">Display Name</label>
-                    <input type="text" name="display_name" class="w-full bg-darkBg border border-white/10 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-accentPrimary transition text-white" placeholder="Optional">
-                </div>
-                <div>
-                    <label class="block text-xs font-semibold uppercase tracking-wider text-textMuted mb-2">Email Address</label>
-                    <input type="email" name="email" required class="w-full bg-darkBg border border-white/10 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-accentPrimary transition text-white">
-                </div>
-                <div>
-                    <label class="block text-xs font-semibold uppercase tracking-wider text-textMuted mb-2">Password</label>
-                    <input type="password" name="password" required class="w-full bg-darkBg border border-white/10 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-accentPrimary transition text-white">
-                </div>
-                
-                <button type="submit" class="w-full bg-accentSecondary text-darkBg font-bold text-sm py-3 px-4 rounded-lg hover:bg-accentSecondary/90 transition duration-300 transform active:scale-95 shadow-[0_0_15px_rgba(52,211,153,0.3)] mt-2">
-                    Forge New Key
-                </button>
-            </form>
-
-            <!-- Toggle Button -->
-            <div class="text-center pt-4 border-t border-white/5">
-                <button @click="isLogin = !isLogin" class="text-xs font-semibold text-accentPrimary hover:underline transition">
-                    <span x-text="isLogin ? 'Create an account instead' : 'Already have a key? Log in'"></span>
-                </button>
-            </div>
+        <div class="stat">
+          <dd class="stat__value accent-text">{{ genre_count }}</dd>
+          <dt class="stat__label">Genres indexed</dt>
         </div>
+        <div class="stat">
+          <dd class="stat__value accent-text">3</dd>
+          <dt class="stat__label">Metadata providers</dt>
+        </div>
+      </dl>
     </div>
+
+    {% if showcase %}
+    <div class="cover-wall" aria-hidden="true">
+      {% for column in showcase %}
+      <div class="cover-wall__col">
+        {% for webtoon in column %}
+        <img src="{{ webtoon.cover_proxy_url }}" alt="" loading="lazy" decoding="async" width="200" height="300">
+        {% endfor %}
+        {% for webtoon in column %}
+        <img src="{{ webtoon.cover_proxy_url }}" alt="" loading="lazy" decoding="async" width="200" height="300">
+        {% endfor %}
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+  </section>
+
+  <section class="stack-lg" style="padding-block: var(--space-12)">
+    <div class="stack">
+      <p class="eyebrow">How it works</p>
+      <h2 class="title-2">Four agents, one feed</h2>
+    </div>
+    <div class="feature-grid">
+      <article class="feature">
+        <div class="feature__icon"><svg width="20" height="20" aria-hidden="true"><use href="#i-sparkles"></use></svg></div>
+        <h3 class="title-4">Preference cleaner</h3>
+        <p class="body-sm muted">Turns a paragraph of plain language into structured genre weights and tone signals.</p>
+      </article>
+      <article class="feature">
+        <div class="feature__icon"><svg width="20" height="20" aria-hidden="true"><use href="#i-search"></use></svg></div>
+        <h3 class="title-4">Vector retriever</h3>
+        <p class="body-sm muted">Embeds the archive locally and pulls the closest matches by cosine similarity — no API fees.</p>
+      </article>
+      <article class="feature">
+        <div class="feature__icon"><svg width="20" height="20" aria-hidden="true"><use href="#i-scroll"></use></svg></div>
+        <h3 class="title-4">Feed ranker</h3>
+        <p class="body-sm muted">Balances similarity against colourfulness and popularity, then explains each pick.</p>
+      </article>
+      <article class="feature">
+        <div class="feature__icon"><svg width="20" height="20" aria-hidden="true"><use href="#i-check"></use></svg></div>
+        <h3 class="title-4">Feedback updater</h3>
+        <p class="body-sm muted">Every rating, skip and finish reshapes your signature before the next cycle.</p>
+      </article>
+    </div>
+  </section>
+
+  <section id="enter" class="panel auth-card" style="margin-block: var(--space-12) var(--space-20)"
+           data-auth>
+    <div class="auth-tabs" role="tablist" aria-label="Sign in or create an account">
+      <button type="button" role="tab" id="tab-signin" aria-controls="panel-signin" aria-selected="true" data-auth-tab="signin">Sign in</button>
+      <button type="button" role="tab" id="tab-signup" aria-controls="panel-signup" aria-selected="false" data-auth-tab="signup">Create account</button>
+    </div>
+
+    <form id="panel-signin" role="tabpanel" aria-labelledby="tab-signin" method="post" action="{% url 'login' %}" class="stack" data-auth-panel="signin">
+      {% csrf_token %}
+      <div class="field">
+        <label class="field__label" for="signin-username">Username</label>
+        <input class="input" id="signin-username" name="username" autocomplete="username" required>
+      </div>
+      <div class="field">
+        <label class="field__label" for="signin-password">Password</label>
+        <input class="input" id="signin-password" name="password" type="password" autocomplete="current-password" required>
+      </div>
+      <button class="btn btn--primary btn--block btn--lg" type="submit">Enter the scroll</button>
+    </form>
+
+    <form id="panel-signup" role="tabpanel" aria-labelledby="tab-signup" method="post" action="{% url 'register' %}" class="stack" data-auth-panel="signup" hidden>
+      {% csrf_token %}
+      <div class="field">
+        <label class="field__label" for="signup-display">Display name</label>
+        <input class="input" id="signup-display" name="display_name" autocomplete="nickname">
+      </div>
+      <div class="field">
+        <label class="field__label" for="signup-username">Username</label>
+        <input class="input" id="signup-username" name="username" autocomplete="username" required>
+      </div>
+      <div class="field">
+        <label class="field__label" for="signup-email">Email</label>
+        <input class="input" id="signup-email" name="email" type="email" autocomplete="email" required>
+      </div>
+      <div class="field">
+        <label class="field__label" for="signup-password">Password</label>
+        <input class="input" id="signup-password" name="password" type="password" autocomplete="new-password" minlength="8" required>
+        <p class="field__hint">At least 8 characters. Stored with Argon2.</p>
+      </div>
+      <button class="btn btn--primary btn--block btn--lg" type="submit">Begin the ritual</button>
+    </form>
+  </section>
+
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  SpellScroll.ready(function () {
+    var root = document.querySelector('[data-auth]');
+    if (!root) { return; }
+    root.querySelectorAll('[data-auth-tab]').forEach(function (tab) {
+      tab.addEventListener('click', function () {
+        var target = tab.dataset.authTab;
+        root.querySelectorAll('[data-auth-tab]').forEach(function (other) {
+          other.setAttribute('aria-selected', String(other === tab));
+        });
+        root.querySelectorAll('[data-auth-panel]').forEach(function (panel) {
+          panel.hidden = panel.dataset.authPanel !== target;
+        });
+      });
+    });
+    // Deep link from the header "Begin" button opens the sign-up tab.
+    if (window.location.hash === '#enter' && document.referrer.indexOf('login') === -1) {
+      root.querySelector('[data-auth-tab="signin"]').focus();
+    }
+  });
+</script>
 {% endblock %}

@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+
+{% block title %}Offline — SpellScroll{% endblock %}
+
+{% block content %}
+<div class="container container--narrow" style="padding-block: var(--space-20)">
+  <div class="state">
+    <div class="state__icon">
+      <svg width="26" height="26" aria-hidden="true"><use href="#i-scroll"></use></svg>
+    </div>
+    <h1 class="title-2">The scroll is out of reach</h1>
+    <p class="state__text">
+      You are offline. Pages you have already visited stay readable, but new
+      recommendations need a connection.
+    </p>
+    <button class="btn btn--primary" type="button" onclick="window.location.reload()">
+      <svg width="16" height="16" aria-hidden="true"><use href="#i-refresh"></use></svg>
+      Try again
+    </button>
+  </div>
+</div>
+{% endblock %}

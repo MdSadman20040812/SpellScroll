@@ -1,27 +1,197 @@
 {% extends 'base.html' %}
 
-{% block title %}SpellScroll — Genre Explorer{% endblock %}
+{% block title %}The Archive — SpellScroll{% endblock %}
+{% block description %}Search and filter every series in the SpellScroll catalogue by genre, score, colour and release year.{% endblock %}
+
+{% block head %}
+<style>
+  .archive-head { padding-block: var(--space-10) var(--space-6); }
+  .archive-controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-3);
+    align-items: center;
+    margin-bottom: var(--space-6);
+  }
+  .archive-controls .select { width: auto; min-width: 168px; }
+
+  .genre-rail { margin-bottom: var(--space-8); }
+  .genre-chip {
+    --hue: 265;
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    min-height: 36px;
+    padding: var(--space-2) var(--space-4);
+    background: hsl(var(--hue) 40% 50% / 0.11);
+    border: 1px solid hsl(var(--hue) 45% 60% / 0.3);
+    border-radius: var(--radius-full);
+    color: hsl(var(--hue) 70% 78%);
+    font-size: var(--text-xs);
+    font-weight: var(--weight-semibold);
+    text-transform: capitalize;
+    white-space: nowrap;
+    transition: all var(--duration-fast) var(--ease-out);
+  }
+  :root[data-theme="light"] .genre-chip { color: hsl(var(--hue) 55% 32%); }
+  @media (prefers-color-scheme: light) {
+    :root:not([data-theme="dark"]) .genre-chip { color: hsl(var(--hue) 55% 32%); }
+  }
+  .genre-chip:hover { background: hsl(var(--hue) 45% 55% / 0.2); }
+  .genre-chip.is-active {
+    background: hsl(var(--hue) 60% 60%);
+    border-color: hsl(var(--hue) 60% 60%);
+    color: #0b0810;
+  }
+  .genre-chip__count { opacity: 0.7; font-variant-numeric: tabular-nums; }
+</style>
+{% endblock %}
 
 {% block content %}
-<div class="max-w-4xl mx-auto px-4 sm:px-6 py-12 relative">
-    <div class="absolute top-1/4 left-1/4 w-80 h-80 bg-accentPrimary/5 rounded-full blur-[100px] pointer-events-none"></div>
+<div class="container">
 
-    <div class="text-center mb-10">
-        <h1 class="font-display text-3xl font-bold tracking-wider text-accentPrimary text-neon-violet">Genre Index</h1>
-        <p class="text-xs text-textMuted mt-1.5">Explore the database elements available in the webtoon catalog.</p>
+  <header class="archive-head stack">
+    <p class="eyebrow eyebrow--accent">The Archive</p>
+    <h1 class="title-1">{{ total_count }} colourful series, indexed</h1>
+    <p class="lede">
+      Everything the recommendation agents can draw from. Search it directly, or narrow by genre.
+    </p>
+  </header>
+
+  <form class="archive-controls" method="get" action="{% url 'genre_list' %}" role="search">
+    <div class="search">
+      <svg class="search__icon" width="17" height="17" aria-hidden="true"><use href="#i-search"></use></svg>
+      <label class="visually-hidden" for="q">Search the archive</label>
+      <input class="input" id="q" name="q" type="search" value="{{ query }}"
+             placeholder="Search titles and synopses…">
     </div>
 
-    <!-- Tag Cloud -->
-    <div class="bg-darkSurface border border-white/5 p-8 rounded-2xl shadow-xl flex flex-wrap justify-center gap-4">
-        {% for genre in genres %}
-        <a href="{% url 'feed_home' %}" class="flex items-center space-x-2 bg-darkBg hover:bg-accentPrimary/10 border border-white/5 hover:border-accentPrimary/30 px-5 py-3 rounded-xl transition duration-200 group">
-            <span class="font-bold text-sm text-textPrimary group-hover:text-accentPrimary transition">{{ genre.name }}</span>
-            <span class="text-[10px] font-bold bg-white/5 px-2 py-0.5 rounded text-textMuted group-hover:text-accentPrimary transition">{{ genre.count }}</span>
-        </a>
-        {% empty %}
-        <p class="text-xs text-textMuted py-4">No genres scraped yet. Run standard catalog updates in Admin panel.</p>
-        {% endfor %}
+    <label class="visually-hidden" for="sort">Sort by</label>
+    <select class="select" id="sort" name="sort" onchange="this.form.submit()">
+      <option value="popular" {% if sort == 'popular' %}selected{% endif %}>Most popular</option>
+      <option value="score" {% if sort == 'score' %}selected{% endif %}>Highest rated</option>
+      <option value="colour" {% if sort == 'colour' %}selected{% endif %}>Most colourful</option>
+      <option value="newest" {% if sort == 'newest' %}selected{% endif %}>Newest first</option>
+      <option value="title" {% if sort == 'title' %}selected{% endif %}>A–Z</option>
+    </select>
+
+    {% if active_genre %}<input type="hidden" name="genre" value="{{ active_genre }}">{% endif %}
+    <button class="btn btn--primary" type="submit">Search</button>
+    {% if query or active_genre %}
+    <a class="btn btn--ghost" href="{% url 'genre_list' %}">Clear</a>
+    {% endif %}
+  </form>
+
+  <div class="scroller genre-rail" role="group" aria-label="Filter by genre">
+    <a class="genre-chip {% if not active_genre %}is-active{% endif %}"
+       href="{% url 'genre_list' %}?sort={{ sort }}{% if query %}&q={{ query|urlencode }}{% endif %}">
+      All <span class="genre-chip__count">{{ total_count }}</span>
+    </a>
+    {% for genre in genres %}
+    <a class="genre-chip {% if active_genre == genre.name %}is-active{% endif %}"
+       style="--hue: {{ genre.hue }}"
+       href="{% url 'genre_list' %}?genre={{ genre.name|urlencode }}&sort={{ sort }}{% if query %}&q={{ query|urlencode }}{% endif %}">
+      {{ genre.name }} <span class="genre-chip__count">{{ genre.count }}</span>
+    </a>
+    {% endfor %}
+  </div>
+
+  {% if results %}
+  <p class="eyebrow" style="margin-bottom: var(--space-4)" aria-live="polite">
+    {{ result_count }} result{{ result_count|pluralize }}
+    {% if active_genre %}in {{ active_genre }}{% endif %}
+    {% if query %}for “{{ query }}”{% endif %}
+  </p>
+
+  <div class="card-grid">
+    {% for item in results %}
+    <article class="card" style="--card-accent: {{ item.display_accent }}">
+      <div class="card__corner card__corner--end">
+        {% if item.average_score %}
+        <span class="card__rank">{{ item.average_score }}%</span>
+        {% endif %}
+      </div>
+      <a class="card__frame" href="{% url 'webtoon_detail' item.slug %}" aria-label="{{ item.title }}">
+        <img class="card__img" data-cover data-loaded="false" loading="lazy" decoding="async"
+             width="300" height="450" src="{{ item.cover_proxy_url }}" alt="Cover of {{ item.title }}">
+        <span class="card__scrim"></span>
+        <span class="card__tags">
+          {% for genre in item.genres|slice:":2" %}<span class="card__tag">{{ genre }}</span>{% endfor %}
+        </span>
+      </a>
+      <div class="card__body">
+        <h2 class="card__title clamp-2">
+          <a href="{% url 'webtoon_detail' item.slug %}">{{ item.title }}</a>
+        </h2>
+        <p class="card__meta">
+          {% if item.release_year %}{{ item.release_year }}{% endif %}
+          {% if item.chapter_count %}&middot; {{ item.chapter_count }} ch{% endif %}
+        </p>
+      </div>
+    </article>
+    {% endfor %}
+  </div>
+  {% elif not remote %}
+  <div class="state">
+    <div class="state__icon"><svg width="24" height="24" aria-hidden="true"><use href="#i-search"></use></svg></div>
+    <h2 class="title-3">Nothing found</h2>
+    <p class="state__text">
+      {% if query %}No series matches “{{ query }}”{% if active_genre %} in {{ active_genre }}{% endif %}.
+      {% else %}No series is filed under {{ active_genre }} yet.{% endif %}
+    </p>
+    <a class="btn btn--primary" href="{% url 'genre_list' %}">Show everything</a>
+  </div>
+  {% endif %}
+
+  {% if remote %}
+  {# Live provider results: the archive is not limited to what has been synced. #}
+  <section style="margin-top: var(--space-10)">
+    <div class="row row--between" style="margin-bottom: var(--space-4)">
+      <div>
+        <p class="eyebrow eyebrow--accent">Beyond the archive</p>
+        <h2 class="title-3">{{ remote|length }} more from the provider network</h2>
+      </div>
+      <span class="body-sm faint">AniList &middot; MangaDex</span>
     </div>
+
+    <div class="card-grid">
+      {% for meta in remote %}
+      <article class="card" style="--card-accent: {{ meta.accent_color|default:'#a78bfa' }}">
+        <div class="card__corner card__corner--end">
+          {% if meta.average_score %}<span class="card__rank">{{ meta.average_score }}%</span>{% endif %}
+        </div>
+        <div class="card__frame">
+          <img class="card__img" data-cover data-loaded="false" loading="lazy" decoding="async"
+               width="300" height="450" src="{{ meta.cover_url }}" alt="Cover of {{ meta.title }}"
+               referrerpolicy="no-referrer">
+          <span class="card__scrim"></span>
+          <span class="card__tags">
+            {% for genre in meta.genres|slice:":2" %}<span class="card__tag">{{ genre }}</span>{% endfor %}
+          </span>
+        </div>
+        <div class="card__body">
+          <h3 class="card__title clamp-2">{{ meta.title }}</h3>
+          <p class="card__meta">
+            {% if meta.release_year %}{{ meta.release_year }}{% endif %}
+            {% if meta.country %}&middot; {{ meta.country }}{% endif %}
+          </p>
+          {% if request.user.is_authenticated %}
+          <form method="post" action="{% url 'import_webtoon' %}" class="card__actions">
+            {% csrf_token %}
+            <input type="hidden" name="title" value="{{ meta.title }}">
+            <input type="hidden" name="anilist_id" value="{{ meta.anilist_id|default_if_none:'' }}">
+            <input type="hidden" name="mangadex_id" value="{{ meta.mangadex_id }}">
+            <button class="btn btn--soft btn--block" type="submit">Add to archive</button>
+          </form>
+          {% else %}
+          <a class="btn btn--soft btn--block mt-auto" href="{% url 'landing' %}#enter">Sign in to add</a>
+          {% endif %}
+        </div>
+      </article>
+      {% endfor %}
+    </div>
+  </section>
+  {% endif %}
 
 </div>
 {% endblock %}

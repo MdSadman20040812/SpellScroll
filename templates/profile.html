@@ -1,174 +1,182 @@
 {% extends 'base.html' %}
 
-{% block title %}SpellScroll — Your Taste Profile{% endblock %}
+{% block title %}Your essence — SpellScroll{% endblock %}
+
+{% block head %}
+<style>
+  .profile-layout { display: grid; gap: var(--space-10); align-items: start; }
+  @media (min-width: 940px) {
+    .profile-layout { grid-template-columns: minmax(0, 1fr) 340px; gap: var(--space-12); }
+  }
+  .mini-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+    gap: var(--space-3);
+  }
+  .mini {
+    display: block;
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    border: 1px solid var(--border);
+    transition: transform var(--duration-fast) var(--ease-out),
+      border-color var(--duration-fast) var(--ease-out);
+  }
+  .mini:hover { transform: translateY(-3px); border-color: var(--border-accent); }
+  .mini img { width: 100%; aspect-ratio: 2 / 3; object-fit: cover; }
+
+  .pref-block {
+    padding: var(--space-4);
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    font-family: var(--font-mono);
+    font-size: var(--text-xs);
+    line-height: var(--leading-relaxed);
+    color: var(--text-secondary);
+    white-space: pre-wrap;
+    word-break: break-word;
+    max-height: 260px;
+    overflow: auto;
+  }
+</style>
+{% endblock %}
 
 {% block content %}
-<div class="max-w-5xl mx-auto px-4 sm:px-6 py-10 relative">
-    <!-- Ambient glow -->
-    <div class="absolute top-1/4 right-1/4 w-[400px] h-[400px] bg-accentSecondary/5 rounded-full blur-[120px] pointer-events-none"></div>
+<div class="container">
 
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-        
-        <!-- Left: Stats & Profile Summary -->
-        <div class="md:col-span-1 space-y-6">
-            <div class="bg-darkSurface border border-white/5 p-6 rounded-2xl shadow-xl">
-                <!-- User avatar -->
-                <div class="text-center space-y-3 pb-6 border-b border-white/5">
-                    <div class="w-16 h-16 bg-accentPrimary/15 border border-accentPrimary/30 rounded-2xl flex items-center justify-center text-accentPrimary text-2xl mx-auto shadow-inner">
-                        <i class="fa-solid fa-wand-magic-sparkles"></i>
-                    </div>
-                    <div>
-                        <h2 class="font-bold text-lg text-white">{{ request.user.display_name }}</h2>
-                        <span class="text-xs text-textMuted uppercase font-semibold tracking-wider">Scroll Weaver</span>
-                    </div>
-                </div>
+  <header class="stack" style="padding-block: var(--space-10) var(--space-8)">
+    <p class="eyebrow eyebrow--accent">Your essence</p>
+    <h1 class="title-1">{{ request.user.display_name|default:request.user.username }}</h1>
+    <p class="lede">
+      Everything the ranking agent knows about your taste, and what it learned from.
+    </p>
+  </header>
 
-                <!-- Counts -->
-                <div class="grid grid-cols-3 gap-2 text-center pt-6">
-                    <div class="p-2 bg-darkBg border border-white/5 rounded-xl">
-                        <span class="block text-lg font-black text-emerald-400">{{ completed_count }}</span>
-                        <span class="text-[9px] uppercase tracking-wider text-textMuted font-bold">Done</span>
-                    </div>
-                    <div class="p-2 bg-darkBg border border-white/5 rounded-xl">
-                        <span class="block text-lg font-black text-blue-400">{{ reading_count }}</span>
-                        <span class="text-[9px] uppercase tracking-wider text-textMuted font-bold">Read</span>
-                    </div>
-                    <div class="p-2 bg-darkBg border border-white/5 rounded-xl">
-                        <span class="block text-lg font-black text-rose-400">{{ skipped_count }}</span>
-                        <span class="text-[9px] uppercase tracking-wider text-textMuted font-bold">Skip</span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Taste Profile summary lists -->
-            <div class="bg-darkSurface border border-white/5 p-6 rounded-2xl shadow-xl space-y-4">
-                <h3 class="font-bold text-xs uppercase text-accentPrimary tracking-widest">Active Taste Schema</h3>
-                
-                {% if preferences %}
-                <div class="space-y-3 text-xs">
-                    <div class="space-y-1">
-                        <span class="text-[10px] uppercase font-bold text-textMuted tracking-wider">Cleaned Genres</span>
-                        <div class="flex flex-wrap gap-1">
-                            {% for genre in preferences.cleaned_genres %}
-                            <span class="bg-white/5 border border-white/10 px-2 py-0.5 rounded text-textPrimary capitalize">{{ genre }}</span>
-                            {% empty %}
-                            <span class="text-textMuted italic">None extraction logged.</span>
-                            {% endfor %}
-                        </div>
-                    </div>
-
-                    <div class="space-y-1">
-                        <span class="text-[10px] uppercase font-bold text-textMuted tracking-wider">Tone Preferences</span>
-                        <div class="flex flex-wrap gap-1">
-                            {% for tone in preferences.tone_preferences %}
-                            <span class="bg-white/5 border border-white/10 px-2 py-0.5 rounded text-textPrimary capitalize">{{ tone }}</span>
-                            {% empty %}
-                            <span class="text-textMuted italic">None extraction logged.</span>
-                            {% endfor %}
-                        </div>
-                    </div>
-
-                    <div class="space-y-1">
-                        <span class="text-[10px] uppercase font-bold text-textMuted tracking-wider">Art Styles</span>
-                        <div class="flex flex-wrap gap-1">
-                            {% for art in preferences.art_style_preferences %}
-                            <span class="bg-white/5 border border-white/10 px-2 py-0.5 rounded text-textPrimary capitalize">{{ art }}</span>
-                            {% empty %}
-                            <span class="text-textMuted italic">None extraction logged.</span>
-                            {% endfor %}
-                        </div>
-                    </div>
-
-                    {% if preferences.disliked_themes %}
-                    <div class="space-y-1">
-                        <span class="text-[10px] uppercase font-bold text-textMuted tracking-wider">Disliked Themes</span>
-                        <div class="flex flex-wrap gap-1">
-                            {% for dislike in preferences.disliked_themes %}
-                            <span class="bg-rose-950/20 border border-rose-500/20 px-2 py-0.5 rounded text-rose-300 capitalize">{{ dislike }}</span>
-                            {% endfor %}
-                        </div>
-                    </div>
-                    {% endif %}
-                </div>
-                {% else %}
-                <p class="text-xs text-textMuted italic">No taste schema mapped yet. Finish onboarding or rate items.</p>
-                {% endif %}
-            </div>
-        </div>
-
-        <!-- Right: Radar Chart Visualization -->
-        <div class="md:col-span-2 bg-darkSurface border border-white/5 p-6 rounded-2xl shadow-xl flex flex-col justify-between">
-            <div class="pb-4 border-b border-white/5">
-                <h3 class="font-bold text-sm uppercase text-accentSecondary tracking-wider">Genre Affinity Vector Mapping</h3>
-                <p class="text-xs text-textMuted mt-0.5">Calculated from reading and positive/negative catalog evaluations.</p>
-            </div>
-            
-            <div class="flex-grow flex items-center justify-center p-4">
-                <div class="w-full max-w-sm aspect-square relative">
-                    <canvas id="genreRadarChart"></canvas>
-                </div>
-            </div>
-        </div>
-
+  <div class="stat-grid" style="margin-bottom: var(--space-10)">
+    <div class="stat">
+      <p class="stat__value accent-text">{{ reading_count }}</p>
+      <p class="stat__label">Currently reading</p>
     </div>
-</div>
+    <div class="stat">
+      <p class="stat__value" style="color: var(--accent-2)">{{ completed_count }}</p>
+      <p class="stat__label">Finished</p>
+    </div>
+    <div class="stat">
+      <p class="stat__value muted">{{ skipped_count }}</p>
+      <p class="stat__label">Skipped</p>
+    </div>
+    <div class="stat">
+      <p class="stat__value" style="color: var(--ink-amber-400)">
+        {% if average_rating %}{{ average_rating }}{% else %}—{% endif %}
+      </p>
+      <p class="stat__label">Average rating</p>
+    </div>
+  </div>
 
-<!-- Chart.js Library -->
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const labels = JSON.parse('{{ chart_labels|safe }}');
-        const dataVals = JSON.parse('{{ chart_data|safe }}');
-        
-        const ctx = document.getElementById('genreRadarChart').getContext('2d');
-        new Chart(ctx, {
-            type: 'radar',
-            data: {
-                labels: labels,
-                datasets: [{
-                    label: 'Affinity Score',
-                    data: dataVals,
-                    backgroundColor: 'rgba(167, 139, 250, 0.2)',
-                    borderColor: 'rgba(167, 139, 250, 0.8)',
-                    borderWidth: 2,
-                    pointBackgroundColor: '#A78BFA',
-                    pointBorderColor: '#fff',
-                    pointHoverBackgroundColor: '#fff',
-                    pointHoverBorderColor: 'rgba(167, 139, 250, 1)'
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                scales: {
-                    r: {
-                        angleLines: {
-                            color: 'rgba(255, 255, 255, 0.05)'
-                        },
-                        grid: {
-                            color: 'rgba(255, 255, 255, 0.05)'
-                        },
-                        pointLabels: {
-                            color: '#6B6B8A',
-                            font: {
-                                family: 'Inter',
-                                size: 11,
-                                weight: '500'
-                            }
-                        },
-                        ticks: {
-                            display: false,
-                            stepSize: 1
-                        }
-                    }
-                },
-                plugins: {
-                    legend: {
-                        display: false
-                    }
-                }
-            }
-        });
-    });
-</script>
+  <div class="profile-layout">
+
+    <div class="stack-lg">
+      <section class="stack">
+        <h2 class="title-3">Genre affinity</h2>
+        {% if genre_meters %}
+        <div class="panel stack">
+          {% for meter in genre_meters %}
+          <div class="meter">
+            <div class="meter__head">
+              <span class="meter__name">{{ meter.name }}</span>
+              <span class="meter__value">{{ meter.score }}</span>
+            </div>
+            <div class="meter__track" role="img"
+                 aria-label="{{ meter.name }}: affinity {{ meter.score }}">
+              <div class="meter__fill" style="width: {{ meter.percent }}%"></div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+        <p class="body-sm faint">
+          Finishing or reading a series adds to its genres; skipping subtracts.
+        </p>
+        {% else %}
+        <div class="state">
+          <div class="state__icon"><svg width="22" height="22" aria-hidden="true"><use href="#i-sparkles"></use></svg></div>
+          <p class="state__text">
+            React to a few cards in your feed and your genre affinities will build up here.
+          </p>
+          <a class="btn btn--primary" href="{% url 'feed_home' %}">Go to your feed</a>
+        </div>
+        {% endif %}
+      </section>
+
+      {% if reading_list %}
+      <section class="stack">
+        <h2 class="title-3">Reading now</h2>
+        <div class="mini-grid">
+          {% for item in reading_list %}
+          <a class="mini" href="{% url 'webtoon_detail' item.slug %}" title="{{ item.title }}">
+            <img data-cover data-loaded="false" loading="lazy" decoding="async"
+                 src="{{ item.cover_proxy_url }}" alt="{{ item.title }}" width="200" height="300">
+          </a>
+          {% endfor %}
+        </div>
+      </section>
+      {% endif %}
+
+      {% if completed_list %}
+      <section class="stack">
+        <h2 class="title-3">Finished</h2>
+        <div class="mini-grid">
+          {% for item in completed_list %}
+          <a class="mini" href="{% url 'webtoon_detail' item.slug %}" title="{{ item.title }}">
+            <img data-cover data-loaded="false" loading="lazy" decoding="async"
+                 src="{{ item.cover_proxy_url }}" alt="{{ item.title }}" width="200" height="300">
+          </a>
+          {% endfor %}
+        </div>
+      </section>
+      {% endif %}
+    </div>
+
+    <aside class="stack">
+      <div class="panel stack-sm">
+        <h2 class="title-4">Taste signature</h2>
+        {% if preferences.raw_input %}
+        <p class="body-sm">In your words:</p>
+        <p class="pref-block">{{ preferences.raw_input }}</p>
+        {% endif %}
+        {% if preferences.liked_genres %}
+        <p class="body-sm" style="margin-top: var(--space-3)">Liked genres</p>
+        <div class="row row--wrap" style="gap: var(--space-1)">
+          {% for genre in preferences.liked_genres %}<span class="tag">{{ genre }}</span>{% endfor %}
+        </div>
+        {% endif %}
+        {% if preferences.disliked_genres %}
+        <p class="body-sm" style="margin-top: var(--space-3)">Avoiding</p>
+        <div class="row row--wrap" style="gap: var(--space-1)">
+          {% for genre in preferences.disliked_genres %}
+          <span class="tag" style="background: rgba(251,113,133,.12); border-color: rgba(251,113,133,.3); color: var(--ink-rose-400)">{{ genre }}</span>
+          {% endfor %}
+        </div>
+        {% endif %}
+        {% if not preferences %}
+        <p class="body-sm muted">No signature stored yet.</p>
+        {% endif %}
+      </div>
+
+      <div class="panel stack-sm">
+        <h2 class="title-4">Coverage</h2>
+        <p class="body-sm muted">
+          You have reacted to <strong>{{ tracked_count }}</strong> of
+          <strong>{{ catalogue_count }}</strong> series in the archive.
+        </p>
+        <div class="meter__track" style="margin-top: var(--space-2)">
+          <div class="meter__fill" style="width: {% widthratio tracked_count catalogue_count 100 %}%"></div>
+        </div>
+        <a class="btn btn--soft btn--block" href="{% url 'genre_list' %}" style="margin-top: var(--space-4)">
+          Explore the archive
+        </a>
+      </div>
+    </aside>
+
+  </div>
+</div>
 {% endblock %}

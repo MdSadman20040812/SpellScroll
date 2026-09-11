@@ -145,6 +145,33 @@ class ChromaClientManager:
         sorted_res = sorted(output, key=lambda x: x["distance"])[:top_k]
         return [{"id": r["id"], "document": r["document"], "metadata": r["metadata"]} for r in sorted_res]
 
+    def get_context_by_ids(self, doc_ids: list) -> dict:
+        """Fetch context documents by exact ID, returning {doc_id: document}.
+
+        Recommendation rationales are stored under deterministic IDs, so they
+        should be looked up directly rather than through a similarity search -
+        an embedding query cannot guarantee it returns the right user's rows,
+        and it costs an embedding pass per call.
+        """
+        if not doc_ids:
+            return {}
+
+        if not self.is_mock and self.context_collection:
+            try:
+                results = self.context_collection.get(ids=list(doc_ids))
+                ids = results.get('ids') or []
+                documents = results.get('documents') or []
+                return {ids[i]: documents[i] for i in range(len(ids)) if documents[i]}
+            except Exception as e:
+                print(f"Chroma context get failed (falling back to mock): {e}")
+
+        store = self.mock_db["context_window_db"]
+        return {
+            doc_id: store[doc_id]["document"]
+            for doc_id in doc_ids
+            if doc_id in store
+        }
+
     def reset_all(self):
         if not self.is_mock and self.client:
             try:

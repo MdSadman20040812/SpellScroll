@@ -21,7 +21,24 @@ def landing_view(request):
         if request.user.onboarding_complete:
             return redirect('feed_home')
         return redirect('onboarding')
-    return render(request, 'landing.html')
+
+    # The hero shows real cover art from the live catalogue rather than stock
+    # imagery, so the landing page is never out of step with the archive.
+    from apps.webtoons.models import Webtoon
+
+    catalogue = Webtoon.objects.filter(is_active=True)
+    showcase_items = list(catalogue.order_by('popularity_rank')[:18])
+    columns = [showcase_items[i::3] for i in range(3)] if showcase_items else []
+
+    genres = set()
+    for genre_list in catalogue.values_list('genres', flat=True):
+        genres.update(g for g in (genre_list or []) if g)
+
+    return render(request, 'landing.html', {
+        'showcase': columns,
+        'catalogue_count': catalogue.count(),
+        'genre_count': len(genres),
+    })
 
 def register_view(request):
     if request.method == 'POST':
@@ -82,3 +99,12 @@ def logout_view(request):
     response = redirect('landing')
     response.delete_cookie('access_token')
     return response
+
+
+def offline_view(request):
+    """Shell page the service worker serves when a navigation fails.
+
+    Rendered server-side (rather than being a static file) so it inherits the
+    same header, theme and design tokens as every other page.
+    """
+    return render(request, 'offline.html')

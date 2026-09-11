@@ -55,11 +55,17 @@ def admin_dashboard_view(request):
     cycles = FeedCycle.objects.all().order_by('-created_at')
     op_cycles = AppOperatingCycle.objects.all().order_by('-timestamp')[:20]
     
+    all_webtoons = Webtoon.objects.filter(is_active=True)
     context = {
         'users': users,
         'webtoons': webtoons,
         'cycles': cycles,
         'op_cycles': op_cycles,
+        'user_count': users.count(),
+        'webtoon_count': all_webtoons.count(),
+        'cycle_count': cycles.count(),
+        'covers_cached': all_webtoons.filter(cover_cached=True).count(),
+        'covers_missing': all_webtoons.filter(cover_cached=False).count(),
     }
     return render(request, 'admin_dashboard.html', context)
 
@@ -75,14 +81,43 @@ def admin_reset_chroma_view(request):
 
 @user_passes_test(is_admin_check, login_url='admin_login')
 def admin_trigger_scrape_view(request):
+    """Expand the catalogue from the live provider APIs."""
     if request.method == 'POST':
-        # Simulate running webtoon_scraper_node locally in sync
         from agents.nodes.webtoon_scraper import scrape_and_update_universe
         try:
-            count = scrape_and_update_universe()
-            messages.success(request, f"Scraped and cataloged {count} new colourful webtoons.")
+            total = scrape_and_update_universe()
+            messages.success(request, f"Catalogue synced. {total} active series available.")
         except Exception as e:
-            messages.error(request, f"Scraping error: {e}")
+            messages.error(request, f"Catalogue sync failed: {e}")
+    return redirect('admin_dashboard')
+
+
+@user_passes_test(is_admin_check, login_url='admin_login')
+def admin_resync_covers_view(request):
+    """Re-mirror artwork and re-derive accent colours for every series.
+
+    Covers are served from a local cache, so this is what to run when an
+    upstream has replaced its artwork or a mirror failed on first fetch.
+    """
+    if request.method == 'POST':
+        from services import covers as cover_service
+        cached = failed = 0
+        for webtoon in Webtoon.objects.filter(is_active=True):
+            path = cover_service.cache_image(webtoon.cover_url) if webtoon.cover_url else None
+            if path is None:
+                webtoon.cover_cached = False
+                webtoon.save(update_fields=['cover_cached'])
+                failed += 1
+                continue
+            webtoon.cover_cached = True
+            if not webtoon.accent_color:
+                webtoon.accent_color = cover_service.dominant_colour(path) or ''
+            webtoon.save(update_fields=['cover_cached', 'accent_color'])
+            cached += 1
+        if failed:
+            messages.error(request, f"{cached} covers cached, {failed} unavailable (placeholders shown).")
+        else:
+            messages.success(request, f"All {cached} covers cached successfully.")
     return redirect('admin_dashboard')
 
 @user_passes_test(is_admin_check, login_url='admin_login')

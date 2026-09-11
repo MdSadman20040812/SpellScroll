@@ -1,3 +1,12 @@
 <resources>
     <string name="app_name">SpellScroll</string>
+    <string name="error_offline">Can\'t reach SpellScroll. Check your connection and pull down to retry.</string>
+    <string name="offline_title">Sanctum Unreachable</string>
+    <string name="offline_desc">The ether is quiet. We could not reach the SpellScroll sanctum. Please check your network and re-attune.</string>
+    <string name="offline_retry">Re-attune to Sanctum</string>
+    <string name="btn_change_server">Configure Server</string>
+    <string name="server_config_title">Sanctum Address</string>
+    <string name="server_config_hint">http://192.168.1.107:8000</string>
+    <string name="download_started">Download started: %s</string>
+    <string name="share_title">Share Webtoon</string>
 </resources>

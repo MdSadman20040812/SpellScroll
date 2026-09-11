@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- A scroll glyph, matching the "i-scroll" icon used in the web UI. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <group android:translateX="30" android:translateY="30" android:scaleX="2" android:scaleY="2">
+        <path
+            android:pathData="M4,5a2,2 0,0 1,2 -2h9a2,2 0,0 1,2 2v12a2,2 0,0 0,2 2H8a2,2 0,0 1,-2 -2V7"
+            android:strokeColor="#A78BFA"
+            android:strokeWidth="1.8"
+            android:strokeLineCap="round"
+            android:strokeLineJoin="round" />
+        <path
+            android:pathData="M4,5v2h2"
+            android:strokeColor="#A78BFA"
+            android:strokeWidth="1.8"
+            android:strokeLineCap="round" />
+        <path
+            android:pathData="M9,8h5M9,12h5"
+            android:strokeColor="#34D399"
+            android:strokeWidth="1.8"
+            android:strokeLineCap="round" />
+    </group>
+</vector>

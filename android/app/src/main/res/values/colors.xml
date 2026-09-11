@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Mirrors var(bg) and var(accent) from static/css/tokens.css so the native
+         chrome matches the web UI it wraps. -->
+    <color name="spell_background">#131B18</color>
+    <color name="spell_surface">#1E2925</color>
+    <color name="spell_surface_border">#2D3C36</color>
+    <color name="spell_accent">#A78BFA</color>
+    <color name="spell_accent_dark">#6D3EE0</color>
+    <color name="spell_text_primary">#E9EEEA</color>
+    <color name="spell_text_muted">#9AA3A0</color>
+    <color name="spell_gold">#C9A84C</color>
+    <color name="spell_mint">#34D399</color>
+    <color name="ic_launcher_background">#1E2925</color>
+</resources>

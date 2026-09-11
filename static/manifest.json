@@ -1,23 +1,63 @@
 {
-  "name": "SpellScroll AI Discovery",
+  "id": "/",
+  "name": "SpellScroll — AI Webtoon Discovery",
   "short_name": "SpellScroll",
-  "description": "AI-curated colorful webtoon discovery and tracking platform.",
-  "start_url": "/",
+  "description": "A taste-driven reading feed for colourful webtoons, curated by a multi-agent recommendation pipeline.",
+  "start_url": "/feed/",
+  "scope": "/",
   "display": "standalone",
-  "background_color": "#0D0D14",
-  "theme_color": "#A78BFA",
-  "orientation": "portrait",
+  "display_override": ["window-controls-overlay", "standalone", "browser"],
+  "background_color": "#131b18",
+  "theme_color": "#131b18",
+  "orientation": "any",
+  "categories": ["books", "entertainment", "lifestyle"],
+  "lang": "en",
+  "dir": "ltr",
+  "prefer_related_applications": false,
   "icons": [
     {
       "src": "/static/icons/icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "/static/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
     },
     {
       "src": "/static/icons/icon-512.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/static/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Your feed",
+      "short_name": "Feed",
+      "description": "Today's curated recommendations",
+      "url": "/feed/"
+    },
+    {
+      "name": "The Archive",
+      "short_name": "Archive",
+      "description": "Browse and search every series",
+      "url": "/genres/"
+    },
+    {
+      "name": "Your essence",
+      "short_name": "Essence",
+      "description": "Your taste signature and reading list",
+      "url": "/profile/"
     }
   ]
 }

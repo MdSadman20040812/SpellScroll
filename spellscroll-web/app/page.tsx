@@ -1,203 +1,133 @@
-'use client';
-
-import React, { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { BookOpen, Sparkles } from 'lucide-react';
+import Link from 'next/link';
+import { catalog, genreFacets } from './lib/catalog';
+import { Icon } from './components/Icons';
+import { Logo } from './components/Logo';
 
 export default function LandingPage() {
-  const router = useRouter();
-  const [username, setUsername] = useState('');
-  const [email, setEmail] = useState('');
-  const [displayName, setDisplayName] = useState('');
-  const [isMounted, setIsMounted] = useState(false);
-
-  useEffect(() => {
-    setIsMounted(true);
-    // Auto redirect if already logged in
-    const activeUser = localStorage.getItem('spellUser');
-    if (activeUser) {
-      const parsed = JSON.parse(activeUser);
-      if (parsed.onboarded) {
-        router.push('/feed');
-      } else {
-        router.push('/onboarding');
-      }
-    }
-  }, [router]);
-
-  const handleEnter = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!username.trim() || !email.trim()) return;
-
-    const userObj = {
-      username: username.trim(),
-      email: email.trim(),
-      displayName: displayName.trim() || username.trim(),
-      onboarded: false,
-    };
-
-    localStorage.setItem('spellUser', JSON.stringify(userObj));
-    router.push('/onboarding');
-  };
-
-  if (!isMounted) return null;
+  const showcase = catalog.slice(0, 18);
+  const columns = [0, 1, 2].map((offset) =>
+    showcase.filter((_, index) => index % 3 === offset)
+  );
+  const genres = genreFacets();
 
   return (
-    <div style={styles.container}>
-      {/* Background Neon Orbs */}
-      <div className="orb orb-violet pulse-orb" style={{ top: '20%', left: '20%' }} />
-      <div className="orb orb-mint pulse-orb" style={{ bottom: '20%', right: '20%', animationDelay: '2s' }} />
+    <div className="container">
+      <section className="hero-split">
+        <div className="stack-lg">
+          <div className="stack">
+            <p className="eyebrow eyebrow--accent">
+              Multi-agent curation &middot; {catalog.length} colourful series
+            </p>
+            <h1 className="title-hero">
+              Your next obsession,
+              <br />
+              <span className="accent-text">read before you find it.</span>
+            </h1>
+            <p className="lede">
+              Describe what you love in your own words. SpellScroll turns that into a taste
+              signature, searches a vector index of full-colour webtoons, and rebuilds your
+              feed every time you react to a card.
+            </p>
+          </div>
 
-      <div className="glass-panel" style={styles.card}>
-        <div style={styles.header}>
-          <h1 style={styles.title} className="text-neon-violet">
-            SPELLSCROLL
-          </h1>
-          <p style={styles.subtitle}>AI-CURATED COLORFUL WEBTOON DISCOVERY</p>
+          <div className="row row--wrap">
+            <Link className="btn btn--primary btn--lg" href="/onboarding">
+              <Icon name="sparkles" /> Start reading
+            </Link>
+            <Link className="btn btn--lg" href="/archive">
+              Browse the archive
+            </Link>
+          </div>
+
+          <dl className="stat-grid">
+            <div className="stat">
+              <dd className="stat__value accent-text">{catalog.length}</dd>
+              <dt className="stat__label">Series in the archive</dt>
+            </div>
+            <div className="stat">
+              <dd className="stat__value accent-text">{genres.length}</dd>
+              <dt className="stat__label">Genres indexed</dt>
+            </div>
+            <div className="stat">
+              <dd className="stat__value accent-text">3</dd>
+              <dt className="stat__label">Metadata providers</dt>
+            </div>
+          </dl>
         </div>
 
-        <form onSubmit={handleEnter} style={styles.form}>
-          <div style={styles.inputGroup}>
-            <label style={styles.label}>Arcane Username</label>
-            <input
-              type="text"
-              required
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              placeholder="e.g. spellweaver"
-              style={styles.input}
-            />
-          </div>
-
-          <div style={styles.inputGroup}>
-            <label style={styles.label}>Email Address</label>
-            <input
-              type="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="e.g. weaver@scroll.local"
-              style={styles.input}
-            />
-          </div>
-
-          <div style={styles.inputGroup}>
-            <label style={styles.label}>Display Name (Optional)</label>
-            <input
-              type="text"
-              value={displayName}
-              onChange={(e) => setDisplayName(e.target.value)}
-              placeholder="e.g. Master Weaver"
-              style={styles.input}
-            />
-          </div>
-
-          <button type="submit" style={styles.button}>
-            Unlock Grimoire <Sparkles size={16} style={{ marginLeft: 8 }} />
-          </button>
-        </form>
-
-        <div style={styles.badgeContainer}>
-          <span style={styles.badge}>
-            Vercel Serverless Ready
-          </span>
+        <div className="cover-wall" aria-hidden="true">
+          {columns.map((column, index) => (
+            <div className="cover-wall__col" key={index}>
+              {[...column, ...column].map((item, i) => (
+                <img
+                  key={`${item.id}-${i}`}
+                  src={item.cover_url}
+                  alt=""
+                  loading="lazy"
+                  decoding="async"
+                  width={200}
+                  height={300}
+                  referrerPolicy="no-referrer"
+                />
+              ))}
+            </div>
+          ))}
         </div>
-      </div>
+      </section>
+
+      <section className="stack-lg" style={{ paddingBlock: 'var(--space-12)' }}>
+        <div className="stack">
+          <p className="eyebrow">How it works</p>
+          <h2 className="title-2">Four agents, one feed</h2>
+        </div>
+        <div className="feature-grid">
+          {[
+            {
+              icon: 'sparkles',
+              title: 'Preference cleaner',
+              body: 'Turns a paragraph of plain language into structured genre weights and tone signals.',
+            },
+            {
+              icon: 'search',
+              title: 'Vector retriever',
+              body: 'Embeds the archive locally and pulls the closest matches by cosine similarity — no API fees.',
+            },
+            {
+              icon: 'scroll',
+              title: 'Feed ranker',
+              body: 'Balances similarity against colourfulness and popularity, then explains each pick.',
+            },
+            {
+              icon: 'check',
+              title: 'Feedback updater',
+              body: 'Every rating, skip and finish reshapes your signature before the next cycle.',
+            },
+          ].map((feature) => (
+            <article className="feature" key={feature.title}>
+              <div className="feature__icon">
+                <Icon name={feature.icon} size={20} />
+              </div>
+              <h3 className="title-4">{feature.title}</h3>
+              <p className="body-sm muted">{feature.body}</p>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section
+        className="panel text-center stack"
+        style={{ marginBlock: 'var(--space-12) var(--space-20)' }}
+      >
+        <div style={{ display: 'grid', placeItems: 'center' }}>
+          <Logo size="lg" />
+        </div>
+        <p className="lede">Two minutes of setup, then a feed that keeps learning.</p>
+        <div>
+          <Link className="btn btn--primary btn--lg" href="/onboarding">
+            Attune your taste
+          </Link>
+        </div>
+      </section>
     </div>
   );
 }
-
-const styles: Record<string, React.CSSProperties> = {
-  container: {
-    position: 'relative',
-    minHeight: '100vh',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: '20px',
-    backgroundColor: '#07070a',
-    zIndex: 1,
-  },
-  card: {
-    width: '100%',
-    maxWidth: '420px',
-    padding: '40px 30px',
-    zIndex: 10,
-    boxShadow: '0 10px 40px rgba(0,0,0,0.5)',
-  },
-  header: {
-    textAlign: 'center',
-    marginBottom: '35px',
-  },
-  title: {
-    fontFamily: 'var(--font-display)',
-    fontSize: '2.5rem',
-    fontWeight: '900',
-    letterSpacing: '4px',
-    marginBottom: '6px',
-  },
-  subtitle: {
-    fontSize: '0.65rem',
-    fontWeight: '700',
-    color: 'var(--text-muted)',
-    letterSpacing: '2px',
-  },
-  form: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '20px',
-  },
-  inputGroup: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '8px',
-  },
-  label: {
-    fontSize: '0.7rem',
-    fontWeight: '600',
-    textTransform: 'uppercase',
-    letterSpacing: '1px',
-    color: 'var(--text-muted)',
-  },
-  input: {
-    backgroundColor: '#07070a',
-    border: '1px solid rgba(255,255,255,0.08)',
-    borderRadius: '8px',
-    padding: '12px 16px',
-    color: '#fff',
-    fontSize: '0.85rem',
-    outline: 'none',
-    transition: 'border-color 0.2s',
-  },
-  button: {
-    backgroundColor: 'var(--accent-primary)',
-    color: '#07070a',
-    border: 'none',
-    borderRadius: '8px',
-    padding: '14px',
-    fontSize: '0.9rem',
-    fontWeight: '700',
-    cursor: 'pointer',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    boxShadow: '0 0 15px rgba(192, 132, 252, 0.3)',
-    transition: 'opacity 0.2s',
-    marginTop: '10px',
-  },
-  badgeContainer: {
-    textAlign: 'center',
-    marginTop: '25px',
-  },
-  badge: {
-    fontSize: '0.6rem',
-    fontWeight: '700',
-    textTransform: 'uppercase',
-    letterSpacing: '1.5px',
-    color: 'var(--accent-secondary)',
-    border: '1px solid rgba(52, 211, 153, 0.2)',
-    padding: '4px 10px',
-    borderRadius: '20px',
-    backgroundColor: 'rgba(52, 211, 153, 0.05)',
-  },
-};

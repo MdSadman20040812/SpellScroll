@@ -1,405 +1,475 @@
 {% extends 'base.html' %}
 
-{% block title %}SpellScroll — Curation Feed{% endblock %}
+{% block title %}Your feed — SpellScroll{% endblock %}
+
+{% block head %}
+<style>
+  .feed-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: var(--space-5);
+    padding-block: var(--space-8) var(--space-6);
+  }
+  .feed-toolbar {
+    /* The chip rail scrolls; the Expand button must never be overlapped by it. */
+    position: sticky;
+    top: var(--header-height);
+    z-index: 40;
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    padding-block: var(--space-3);
+    margin-bottom: var(--space-6);
+    background: var(--scrim);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border-bottom: 1px solid var(--border);
+  }
+  .cycle-pill {
+    display: inline-flex;
+    align-items: baseline;
+    gap: var(--space-2);
+    padding: var(--space-2) var(--space-4);
+    background: var(--accent-soft);
+    border: 1px solid var(--border-accent);
+    border-radius: var(--radius-full);
+    color: var(--accent);
+    font-size: var(--text-xs);
+    font-weight: var(--weight-semibold);
+  }
+  .cycle-pill strong { font-family: var(--font-display); font-size: var(--text-base); }
+
+  /* Cards leaving the feed after a skip: collapse rather than vanish, so the
+     grid does not jump under the pointer. */
+  .card.is-leaving {
+    animation: card-out var(--duration-slow) var(--ease-in-out) forwards;
+    pointer-events: none;
+  }
+  @keyframes card-out {
+    to { opacity: 0; transform: scale(0.94); }
+  }
+
+  .live-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--grey-500);
+    transition: background-color var(--duration-base) var(--ease-out);
+  }
+  .live-dot.is-live { background: var(--accent-2); box-shadow: 0 0 0 3px var(--accent-2-soft); }
+</style>
+{% endblock %}
 
 {% block content %}
-<style>
-    .webtoon-card {
-        transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.4s ease;
-    }
-    .webtoon-card:hover {
-        transform: translateY(-8px) scale(1.02);
-    }
-    .magical-spinner {
-        animation: rotate 2s linear infinite;
-    }
-    @keyframes rotate {
-        100% { transform: rotate(360deg); }
-    }
-    .card-gradient-overlay {
-        background: linear-gradient(to top, rgba(9, 9, 14, 0.95) 0%, rgba(9, 9, 14, 0) 40%);
-    }
-</style>
+<div class="container" data-feed data-statuses='{{ statuses_json }}' data-user-id="{{ user_id }}">
 
-<div class="max-w-7xl mx-auto px-4 sm:px-6 py-10" x-data="feedHandler()" x-init="initFeed()">
-    
-    <!-- Top Stats and Controls Banner -->
-    <div class="glass-panel p-8 rounded-[2rem] mb-12 flex flex-col lg:flex-row items-center justify-between gap-8 relative overflow-hidden group">
-        <div class="absolute top-0 right-0 w-80 h-80 bg-accentPrimary/10 rounded-full blur-[100px] pointer-events-none group-hover:bg-accentPrimary/15 transition-all duration-700"></div>
-        <div class="absolute -bottom-20 -left-20 w-60 h-60 bg-accentSecondary/5 rounded-full blur-[80px] pointer-events-none"></div>
-        
-        <div class="flex items-center space-x-6 relative z-10">
-            <div class="w-16 h-16 bg-accentPrimary/10 rounded-2xl flex items-center justify-center text-accentPrimary border border-accentPrimary/20 shadow-[0_0_20px_rgba(167,139,250,0.15)] text-2xl group-hover:scale-110 transition-transform duration-500">
-                <i class="fa-solid fa-scroll animate-pulse"></i>
-            </div>
-            <div>
-                <h2 class="font-display text-2xl sm:text-3xl font-black tracking-tight text-white">Your Weekly <span class="text-accentPrimary">Arcana</span></h2>
-                <p class="text-[11px] text-textMuted uppercase tracking-[0.2em] mt-1 font-bold">Neural Reinforcement Discovery Cycle</p>
-            </div>
-        </div>
-
-        <div class="flex flex-wrap items-center gap-4 relative z-10">
-            <!-- Cycle Info -->
-            <div class="flex flex-col items-center px-6 py-2 rounded-2xl bg-white/5 border border-white/10">
-                <span class="text-[9px] text-textMuted uppercase tracking-widest font-black">Current Cycle</span>
-                <span class="text-xl font-display font-black text-accentPrimary" x-text="cycleNumber">1</span>
-            </div>
-
-            <!-- Refresh / Expand Button -->
-            <button @click="expandFeed()" :disabled="expanding" 
-                    class="group/btn h-14 px-8 rounded-2xl bg-accentPrimary text-darkBg font-black text-xs uppercase tracking-[0.2em] flex items-center space-x-3 hover:bg-white transition-all duration-300 disabled:opacity-50 disabled:grayscale">
-                <template x-if="!expanding">
-                    <i class="fa-solid fa-wand-sparkles text-lg group-hover/btn:rotate-12 transition-transform"></i>
-                </template>
-                <template x-if="expanding">
-                    <i class="fa-solid fa-circle-notch animate-spin text-lg"></i>
-                </template>
-                <span x-text="expanding ? 'Summoning...' : 'Expand Discovery'"></span>
-            </button>
-        </div>
+  <header class="feed-head">
+    <div class="stack-sm">
+      <p class="eyebrow eyebrow--accent">Curated for you</p>
+      <h1 class="title-1">Your Arcana</h1>
+      <p class="body-sm muted">
+        Each card explains why it surfaced. React to it and the next cycle shifts.
+      </p>
     </div>
-
-    <!-- Active Genre Filters -->
-    <div class="flex items-center space-x-3 overflow-x-auto pb-6 mb-8 scrollbar-none no-scrollbar">
-        <button @click="activeGenre = 'all'"
-                :class="activeGenre === 'all' ? 'bg-accentPrimary text-darkBg border-accentPrimary shadow-[0_0_15px_rgba(167,139,250,0.3)]' : 'bg-darkSurface text-textMuted border-white/5 hover:border-white/20'"
-                class="text-[10px] font-black uppercase tracking-widest px-6 py-3 border rounded-xl transition-all duration-300 shrink-0">
-            All Grimoires
-        </button>
-        <template x-for="genre in availableGenres">
-            <button @click="activeGenre = genre"
-                    :class="activeGenre === genre ? 'bg-accentPrimary text-darkBg border-accentPrimary shadow-[0_0_15px_rgba(167,139,250,0.3)]' : 'bg-darkSurface text-textMuted border-white/5 hover:border-white/20'"
-                    class="text-[10px] font-black uppercase tracking-widest px-6 py-3 border rounded-xl capitalize transition-all duration-300 shrink-0"
-                    x-text="genre">
-            </button>
-        </template>
+    <div class="row">
+      <span class="cycle-pill">Cycle <strong data-cycle>—</strong></span>
+      <span class="row" style="gap: var(--space-2)">
+        <span class="live-dot" data-live-dot title="Live updates"></span>
+        <span class="eyebrow" data-live-label>Connecting</span>
+      </span>
     </div>
+  </header>
 
-    <!-- Recommendations Grid -->
-    <div x-show="!loading && filteredWebtoons().length > 0" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6 sm:gap-8" x-cloak>
-        <template x-for="(item, index) in filteredWebtoons()" :key="item.id">
-            <div class="webtoon-card group bg-darkSurface border border-white/5 rounded-[1.5rem] overflow-hidden shadow-2xl flex flex-col relative"
-                 :style="'transition-delay: ' + (index * 50) + 'ms'">
-                
-                <!-- Status badges -->
-                <div class="absolute top-4 left-4 z-20 flex flex-col gap-2">
-                    <span x-show="item.status === 'completed'" class="text-[8px] bg-accentSecondary text-darkBg font-black uppercase tracking-widest px-3 py-1 rounded-full shadow-lg">Finished</span>
-                    <span x-show="item.status === 'reading'" class="text-[8px] bg-blue-500 text-white font-black uppercase tracking-widest px-3 py-1 rounded-full shadow-lg">Reading</span>
-                    <span x-show="item.status === 'skipped'" class="text-[8px] bg-rose-500 text-white font-black uppercase tracking-widest px-3 py-1 rounded-full shadow-lg">Archived</span>
-                </div>
-
-                <!-- Rank / Score Indicator -->
-                <div class="absolute top-4 right-4 z-20 w-8 h-8 rounded-lg glass-panel flex items-center justify-center border-accentPrimary/20">
-                    <span class="text-[10px] font-display font-black text-accentPrimary" x-text="'#' + (index + 1)"></span>
-                </div>
-
-                <!-- Card Cover -->
-                <a :href="'/webtoon/' + item.slug + '/'" class="block relative aspect-[2/3] overflow-hidden bg-darkBg">
-                    <img :src="item.cover_url || 'https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?w=600'"
-                         class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
-                         @error="$el.src = 'https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?w=600'">
-                    
-                    <div class="absolute inset-0 card-gradient-overlay opacity-80 group-hover:opacity-100 transition-opacity"></div>
-
-                    <!-- Genre tags on cover -->
-                    <div class="absolute bottom-4 left-4 right-4 flex flex-wrap gap-1.5">
-                        <template x-for="genre in item.genres.slice(0, 2)">
-                            <span class="text-[8px] font-black uppercase tracking-tighter bg-accentPrimary/20 backdrop-blur-md border border-accentPrimary/30 px-2 py-0.5 rounded text-accentPrimary" x-text="genre"></span>
-                        </template>
-                    </div>
-                </a>
-
-                <!-- Card Content -->
-                <div class="p-5 flex-grow flex flex-col justify-between bg-darkSurface">
-                    <div class="space-y-2">
-                        <h3 class="font-display text-base font-bold tracking-wide text-white group-hover:text-accentPrimary transition-colors truncate" x-text="item.title"></h3>
-                        <p class="text-[11px] text-textMuted line-clamp-3 leading-relaxed font-medium italic" x-text="'\"' + item.reason + '\"'"></p>
-                    </div>
-
-                    <!-- Action Bar -->
-                    <div class="mt-6 flex items-center gap-2">
-                        <button @click="skipWebtoon(item)" class="flex-1 h-10 bg-white/5 hover:bg-rose-500/10 border border-white/5 hover:border-rose-500/20 text-textMuted hover:text-rose-400 rounded-xl transition-all duration-300">
-                            <i class="fa-solid fa-ghost"></i>
-                        </button>
-                        
-                        <div class="relative flex-[3]" x-data="{ open: false }">
-                            <button @click="open = !open" class="w-full h-10 bg-accentPrimary/10 border border-accentPrimary/20 hover:bg-accentPrimary hover:text-darkBg text-accentPrimary text-[10px] font-black uppercase tracking-widest rounded-xl transition-all duration-300">
-                                <i class="fa-solid fa-eye mr-2"></i> Unveil
-                            </button>
-                            <!-- Dropdown -->
-                            <div x-show="open" @click.away="open = false"
-                                 x-transition:enter="transition ease-out duration-200"
-                                 x-transition:enter-start="opacity-0 translate-y-2"
-                                 x-transition:enter-end="opacity-100 translate-y-0"
-                                 class="absolute bottom-full mb-3 right-0 w-40 glass-panel rounded-2xl shadow-2xl py-2 z-30" x-cloak>
-                                <button @click="startReading(item); open = false" class="w-full text-left px-4 py-2.5 text-[10px] font-bold uppercase tracking-wider text-textPrimary hover:bg-accentPrimary/10 flex items-center space-x-3 transition-colors">
-                                    <i class="fa-solid fa-book-open text-blue-400"></i> <span>Reading</span>
-                                </button>
-                                <button @click="openCompletedModal(item); open = false" class="w-full text-left px-4 py-2.5 text-[10px] font-bold uppercase tracking-wider text-textPrimary hover:bg-accentPrimary/10 flex items-center space-x-3 transition-colors">
-                                    <i class="fa-solid fa-circle-check text-accentSecondary"></i> <span>Finished</span>
-                                </button>
-                                <div class="my-1 border-t border-white/5"></div>
-                                <a :href="'/webtoon/' + item.slug + '/'" class="w-full text-left px-4 py-2.5 text-[10px] font-bold uppercase tracking-wider text-accentPrimary hover:bg-accentPrimary/10 flex items-center space-x-3 transition-colors">
-                                    <i class="fa-solid fa-circle-info"></i> <span>Chronicle</span>
-                                </a>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-            </div>
-        </template>
+  <div class="feed-toolbar">
+    <div class="scroller grow" role="group" aria-label="Filter by genre">
+      <button class="chip is-active" type="button" data-genre="" aria-pressed="true">All</button>
     </div>
+    <button class="btn btn--soft" type="button" data-expand style="flex: 0 0 auto">
+      <svg width="16" height="16" aria-hidden="true"><use href="#i-sparkles"></use></svg>
+      <span data-expand-label>Expand</span>
+    </button>
+  </div>
 
-    <!-- Empty/Fallback States -->
-    <div x-show="!loading && filteredWebtoons().length === 0" class="text-center py-24 glass-panel border-dashed border-white/10 rounded-[3rem] animate-in fade-in zoom-in duration-700" x-cloak>
-        <div class="w-20 h-20 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-6">
-            <i class="fa-solid fa-wand-magic-sparkles text-4xl text-accentPrimary/20"></i>
-        </div>
-        <h3 class="font-display text-2xl font-black text-white">The Archive is Silent</h3>
-        <p class="text-xs text-textMuted max-w-sm mx-auto mt-3 font-medium uppercase tracking-widest">Adjust your essence or expand the discovery ritual to find new scrolls.</p>
-        <button @click="expandFeed()" class="mt-8 bg-accentPrimary text-darkBg font-black text-[10px] uppercase tracking-[0.2em] px-10 py-4 rounded-2xl hover:bg-white transition-all duration-300 shadow-[0_0_20px_rgba(167,139,250,0.3)]">
-            Begin Summoning
-        </button>
-    </div>
+  <div class="card-grid" data-grid role="feed" aria-busy="true"></div>
 
-    <!-- Main Loading Spinner -->
-    <div x-show="loading" class="text-center py-32" x-cloak>
-        <div class="relative w-24 h-24 mx-auto mb-8">
-            <div class="absolute inset-0 rounded-full border-[3px] border-accentPrimary/10 border-t-accentPrimary magical-spinner"></div>
-            <div class="absolute inset-4 rounded-full border-[2px] border-accentSecondary/10 border-b-accentSecondary magical-spinner" style="animation-direction: reverse; animation-duration: 1.5s;"></div>
-            <div class="absolute inset-0 flex items-center justify-center">
-                <i class="fa-solid fa-scroll text-accentPrimary/40 animate-pulse"></i>
-            </div>
-        </div>
-        <p class="font-display text-sm tracking-[0.4em] text-accentPrimary uppercase animate-pulse">Decoding Taste Signatures...</p>
-    </div>
+  <div class="state" data-empty hidden>
+    <div class="state__icon"><svg width="24" height="24" aria-hidden="true"><use href="#i-ghost"></use></svg></div>
+    <h2 class="title-3">Nothing matches that filter</h2>
+    <p class="state__text" data-empty-text>Try a different genre, or expand the discovery cycle to pull in new series.</p>
+    <button class="btn btn--primary" type="button" data-expand-empty>Expand discovery</button>
+  </div>
 
-    <!-- Rating & Review Feedback Modal -->
-    <div x-show="modalOpen" class="fixed inset-0 bg-darkBg/90 backdrop-blur-md z-50 flex items-center justify-center p-6"
-         x-transition:enter="transition ease-out duration-300"
-         x-transition:enter-start="opacity-0 scale-95"
-         x-transition:enter-end="opacity-100 scale-100"
-         x-cloak>
-        <div class="max-w-md w-full glass-panel border-white/10 p-8 rounded-[2.5rem] space-y-8 relative shadow-[0_0_50px_rgba(167,139,250,0.1)]" @click.away="modalOpen = false">
-            <div class="flex items-center justify-between">
-                <div class="space-y-1">
-                    <h3 class="font-display text-xl font-black text-white">Scroll <span class="text-accentPrimary">Feedback</span></h3>
-                    <p class="text-[10px] text-textMuted uppercase tracking-widest font-bold" x-text="activeModalItem ? activeModalItem.title : ''"></p>
-                </div>
-                <button @click="modalOpen = false" class="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-textMuted hover:text-white transition-colors">
-                    <i class="fa-solid fa-xmark"></i>
-                </button>
-            </div>
-            
-            <!-- Stars Selection -->
-            <div class="space-y-3">
-                <label class="block text-[10px] font-black uppercase tracking-[0.2em] text-textMuted">Power Rating</label>
-                <div class="flex justify-between items-center bg-darkBg/50 p-4 rounded-2xl border border-white/5">
-                    <template x-for="star in [1, 2, 3, 4, 5]">
-                        <button @click="modalRating = star" class="group focus:outline-none transition-all duration-300 transform active:scale-90">
-                            <i class="fa-star text-3xl transition-all"
-                               :class="star <= modalRating ? 'fa-solid text-amber-400 scale-110 drop-shadow-[0_0_8px_rgba(251,191,36,0.5)]' : 'fa-regular text-textMuted/20 group-hover:text-textMuted/40'"></i>
-                        </button>
-                    </template>
-                </div>
-            </div>
-
-            <!-- Review note -->
-            <div class="space-y-3">
-                <label class="block text-[10px] font-black uppercase tracking-[0.2em] text-textMuted">Scribe your thoughts</label>
-                <textarea x-model="modalNote" rows="4"
-                          class="w-full bg-darkBg/50 border border-white/5 rounded-2xl px-5 py-4 text-xs font-medium focus:outline-none focus:border-accentPrimary/40 text-white placeholder-textMuted/30 transition-all"
-                          placeholder="What resonance did this scroll leave?"></textarea>
-            </div>
-
-            <div class="flex items-center space-x-4 pt-4">
-                <button @click="modalOpen = false" class="flex-1 h-12 rounded-2xl bg-white/5 text-[10px] text-textMuted font-black uppercase tracking-widest hover:bg-white/10 transition-all">
-                    Dismiss
-                </button>
-                <button @click="submitCompletedFeedback()" class="flex-1 h-12 rounded-2xl bg-accentSecondary text-darkBg text-[10px] font-black uppercase tracking-widest hover:shadow-[0_0_20px_rgba(52,211,153,0.3)] transition-all">
-                    Preserve Review
-                </button>
-            </div>
-        </div>
-    </div>
-
+  <div class="state state--error" data-error hidden role="alert">
+    <div class="state__icon"><svg width="24" height="24" aria-hidden="true"><use href="#i-alert"></use></svg></div>
+    <h2 class="title-3">Your feed did not load</h2>
+    <p class="state__text" data-error-text></p>
+    <button class="btn btn--primary" type="button" data-retry>
+      <svg width="16" height="16" aria-hidden="true"><use href="#i-refresh"></use></svg> Try again
+    </button>
+  </div>
 </div>
 
+<div class="dialog-backdrop" data-dialog hidden>
+  <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="rate-title">
+    <div class="row row--between" style="margin-bottom: var(--space-5)">
+      <div>
+        <h2 class="title-3" id="rate-title">How was it?</h2>
+        <p class="body-sm muted" data-dialog-series></p>
+      </div>
+      <button class="btn btn--ghost btn--icon" type="button" data-dialog-close aria-label="Close">
+        <svg width="18" height="18" aria-hidden="true"><use href="#i-x"></use></svg>
+      </button>
+    </div>
+
+    <div class="stack">
+      <div class="field">
+        <span class="field__label" id="rating-label">Rating</span>
+        <div class="stars" role="radiogroup" aria-labelledby="rating-label" data-stars></div>
+      </div>
+      <div class="field">
+        <label class="field__label" for="review-note">Notes <span class="faint">(optional)</span></label>
+        <textarea class="textarea" id="review-note" data-note rows="3"
+                  placeholder="What worked, what didn't — this feeds straight back into your signature."></textarea>
+      </div>
+      <div class="row">
+        <button class="btn grow" type="button" data-dialog-cancel>Cancel</button>
+        <button class="btn btn--accent2 grow" type="button" data-dialog-save>Save response</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
 <script>
-    function feedHandler() {
-        return {
-            webtoons: [],
-            availableGenres: [],
-            activeGenre: 'all',
-            loading: true,
-            expanding: false,
-            cycleNumber: 1,
-            ws: null,
-            
-            // Modal properties
-            modalOpen: false,
-            activeModalItem: null,
-            modalRating: 5,
-            modalNote: '',
+SpellScroll.ready(function () {
+  var root = document.querySelector('[data-feed]');
+  var grid = root.querySelector('[data-grid]');
+  var toolbar = root.querySelector('.feed-toolbar .scroller');
+  var emptyState = root.querySelector('[data-empty]');
+  var errorState = root.querySelector('[data-error]');
+  var errorText = root.querySelector('[data-error-text]');
+  var cycleEl = root.querySelector('[data-cycle]');
+  var expandBtn = root.querySelector('[data-expand]');
+  var expandLabel = root.querySelector('[data-expand-label]');
+  var liveDot = root.querySelector('[data-live-dot]');
+  var liveLabel = root.querySelector('[data-live-label]');
 
-            async initFeed() {
-                this.loading = true;
-                await this.fetchFeed();
-                this.connectWebSocket();
-                this.loading = false;
-            },
-            async fetchFeed() {
-                try {
-                    const resp = await fetch('/api/v1/feed/current', {
-                        headers: {
-                            'Authorization': 'Bearer ' + '{{ jwt_token }}'
-                        }
-                    });
-                    if (resp.ok) {
-                        const data = await resp.json();
-                        this.webtoons = data.webtoons || [];
-                        this.cycleNumber = data.cycle_number || 1;
-                        this.extractGenres();
-                    }
-                } catch (e) {
-                    console.error('Fetch feed error:', e);
-                }
-            },
-            extractGenres() {
-                const genresSet = new Set();
-                this.webtoons.forEach(item => {
-                    if (item.genres) {
-                        item.genres.forEach(g => genresSet.add(g.toLowerCase()));
-                    }
-                });
-                this.availableGenres = Array.from(genresSet).sort();
-            },
-            filteredWebtoons() {
-                if (this.activeGenre === 'all') {
-                    return this.webtoons;
-                }
-                return this.webtoons.filter(item => 
-                    item.genres && item.genres.map(g => g.toLowerCase()).includes(this.activeGenre)
-                );
-            },
-            async skipWebtoon(item) {
-                item.status = 'skipped';
-                try {
-                    await fetch('/api/v1/feed/feedback', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-CSRFToken': '{{ csrf_token }}',
-                            'Authorization': 'Bearer ' + '{{ jwt_token }}'
-                        },
-                        body: JSON.stringify({
-                            webtoon_id: item.id,
-                            status: 'skipped',
-                            rating: 1,
-                            feedback_note: 'Archived from discovery.'
-                        })
-                    });
-                } catch (e) {
-                    console.error('Submit skip feedback error:', e);
-                }
-            },
-            async startReading(item) {
-                item.status = 'reading';
-                try {
-                    await fetch('/api/v1/feed/feedback', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-CSRFToken': '{{ csrf_token }}',
-                            'Authorization': 'Bearer ' + '{{ jwt_token }}'
-                        },
-                        body: JSON.stringify({
-                            webtoon_id: item.id,
-                            status: 'reading',
-                            rating: 3,
-                            feedback_note: 'Began reading the chronicle.'
-                        })
-                    });
-                } catch (e) {
-                    console.error('Submit reading status error:', e);
-                }
-            },
-            openCompletedModal(item) {
-                this.activeModalItem = item;
-                this.modalRating = 5;
-                this.modalNote = '';
-                this.modalOpen = true;
-            },
-            async submitCompletedFeedback() {
-                if (!this.activeModalItem) return;
-                const item = this.activeModalItem;
-                item.status = 'completed';
-                this.modalOpen = false;
+  var dialog = document.querySelector('[data-dialog]');
+  var starsEl = dialog.querySelector('[data-stars]');
+  var noteEl = dialog.querySelector('[data-note]');
+  var seriesEl = dialog.querySelector('[data-dialog-series]');
 
-                try {
-                    await fetch('/api/v1/feed/feedback', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-CSRFToken': '{{ csrf_token }}',
-                            'Authorization': 'Bearer ' + '{{ jwt_token }}'
-                        },
-                        body: JSON.stringify({
-                            webtoon_id: item.id,
-                            status: 'completed',
-                            rating: this.modalRating,
-                            feedback_note: this.modalNote
-                        })
-                    });
-                } catch (e) {
-                    console.error('Submit completed feedback error:', e);
-                }
-            },
-            async expandFeed() {
-                this.expanding = true;
-                try {
-                    const resp = await fetch('/api/v1/feed/expand', {
-                        method: 'POST',
-                        headers: {
-                            'X-CSRFToken': '{{ csrf_token }}',
-                            'Authorization': 'Bearer ' + '{{ jwt_token }}'
-                        }
-                    });
-                    if (resp.ok) {
-                        const data = await resp.json();
-                        this.webtoons = data.webtoons || [];
-                        this.cycleNumber = data.cycle_number || this.cycleNumber + 1;
-                        this.extractGenres();
-                    }
-                } catch (e) {
-                    console.error('Expand feed error:', e);
-                }
-                this.expanding = false;
-            },
-            connectWebSocket() {
-                const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-                const user_id = '{{ request.user.id }}';
-                const token = '{{ jwt_token }}';
-                
-                const wsUrl = `${protocol}//${window.location.host}/ws/feed/${user_id}/?token=${token}`;
-                this.ws = new WebSocket(wsUrl);
+  var state = { items: [], genre: '', rating: 5, target: null, releaseFocus: null };
+  var esc = SpellScroll.escapeHtml;
 
-                this.ws.onmessage = (event) => {
-                    const msg = JSON.parse(event.data);
-                    if (msg.type === 'feed.update') {
-                        this.webtoons = msg.webtoons || [];
-                        this.extractGenres();
-                    } else if (msg.type === 'preference.updated') {
-                        console.log('Taste profile updated via socket:', msg.preferences);
-                    }
-                };
+  /* ------------------------------------------------------------ rendering */
 
-                this.ws.onclose = () => {
-                    setTimeout(() => this.connectWebSocket(), 5000);
-                };
-            }
-        }
+  function skeletons(count) {
+    var html = '';
+    for (var i = 0; i < count; i++) {
+      html +=
+        '<article class="card card--skeleton" aria-hidden="true">' +
+        '<div class="card__frame"></div>' +
+        '<div class="card__body">' +
+        '<div class="skeleton-line"></div>' +
+        '<div class="skeleton-line skeleton-line--short"></div>' +
+        '</div></article>';
     }
+    grid.innerHTML = html;
+  }
+
+  function badgeFor(status) {
+    if (status === 'reading') { return '<span class="badge badge--reading">Reading</span>'; }
+    if (status === 'completed') { return '<span class="badge badge--completed">Finished</span>'; }
+    if (status === 'skipped') { return '<span class="badge badge--skipped">Skipped</span>'; }
+    return '';
+  }
+
+  function cardHtml(item, index) {
+    var tags = (item.genres || []).slice(0, 2).map(function (genre) {
+      return '<span class="card__tag">' + esc(genre) + '</span>';
+    }).join('');
+
+    var meta = [];
+    if (item.average_score) { meta.push(esc(item.average_score) + '%'); }
+    if (item.release_year) { meta.push(esc(item.release_year)); }
+    if (item.chapter_count) { meta.push(esc(item.chapter_count) + ' ch'); }
+
+    return (
+      '<article class="card" style="--card-accent: ' + esc(item.accent_color) + '" data-card="' + esc(item.id) + '">' +
+        '<div class="card__corner card__corner--start">' + badgeFor(item.status) + '</div>' +
+        '<div class="card__corner card__corner--end"><span class="card__rank">#' + (index + 1) + '</span></div>' +
+        '<a class="card__frame" href="' + esc(item.detail_url) + '" aria-label="' + esc(item.title) + '">' +
+          '<img class="card__img" data-cover data-loaded="false" loading="lazy" decoding="async" ' +
+               'width="300" height="450" src="' + esc(item.cover_url) + '" alt="Cover of ' + esc(item.title) + '">' +
+          '<span class="card__scrim"></span>' +
+          '<span class="card__tags">' + tags + '</span>' +
+        '</a>' +
+        '<div class="card__body">' +
+          '<h2 class="card__title"><a href="' + esc(item.detail_url) + '">' + esc(item.title) + '</a></h2>' +
+          (meta.length ? '<p class="card__meta">' + meta.join(' &middot; ') + '</p>' : '') +
+          '<p class="card__reason clamp-3">' + esc(item.reason) + '</p>' +
+          '<div class="card__actions">' +
+            '<button class="btn btn--icon btn--danger" type="button" data-action="skip" ' +
+                    'aria-label="Not for me: ' + esc(item.title) + '">' +
+              '<svg width="15" height="15" aria-hidden="true"><use href="#i-ghost"></use></svg></button>' +
+            '<button class="btn" type="button" data-action="reading">' +
+              '<svg width="14" height="14" aria-hidden="true"><use href="#i-book"></use></svg> Reading</button>' +
+            '<button class="btn btn--soft" type="button" data-action="rate">' +
+              '<svg width="14" height="14" aria-hidden="true"><use href="#i-check"></use></svg> Done</button>' +
+          '</div>' +
+        '</div>' +
+      '</article>'
+    );
+  }
+
+  function visible() {
+    if (!state.genre) { return state.items; }
+    return state.items.filter(function (item) {
+      return (item.genres || []).some(function (genre) {
+        return genre.toLowerCase() === state.genre;
+      });
+    });
+  }
+
+  function render() {
+    var items = visible();
+    grid.setAttribute('aria-busy', 'false');
+    errorState.hidden = true;
+
+    if (!items.length) {
+      grid.innerHTML = '';
+      emptyState.hidden = false;
+      root.querySelector('[data-empty-text]').textContent = state.items.length
+        ? 'No series in your current cycle match that genre.'
+        : 'Your cycle is empty. Expand discovery to pull in new series.';
+      return;
+    }
+
+    emptyState.hidden = true;
+    grid.innerHTML = items.map(cardHtml).join('');
+    SpellScroll.initCovers(grid);
+  }
+
+  function renderGenres() {
+    var counts = {};
+    state.items.forEach(function (item) {
+      (item.genres || []).forEach(function (genre) {
+        var key = genre.toLowerCase();
+        counts[key] = (counts[key] || 0) + 1;
+      });
+    });
+    var names = Object.keys(counts).sort(function (a, b) { return counts[b] - counts[a]; });
+
+    var html = '<button class="chip' + (state.genre ? '' : ' is-active') +
+      '" type="button" data-genre="" aria-pressed="' + (state.genre ? 'false' : 'true') + '">All ' +
+      '<span class="chip__count">' + state.items.length + '</span></button>';
+
+    names.forEach(function (name) {
+      var active = state.genre === name;
+      html += '<button class="chip' + (active ? ' is-active' : '') + '" type="button" data-genre="' +
+        esc(name) + '" aria-pressed="' + active + '">' + esc(name) +
+        ' <span class="chip__count">' + counts[name] + '</span></button>';
+    });
+    toolbar.innerHTML = html;
+  }
+
+  /* ----------------------------------------------------------------- data */
+
+  function applyPayload(payload) {
+    state.items = payload.webtoons || [];
+    if (payload.cycle_number) { cycleEl.textContent = payload.cycle_number; }
+    renderGenres();
+    render();
+  }
+
+  async function load() {
+    skeletons(10);
+    grid.setAttribute('aria-busy', 'true');
+    emptyState.hidden = true;
+    errorState.hidden = true;
+    try {
+      applyPayload(await SpellScroll.api('/api/v1/feed/current', { timeout: 90000 }));
+    } catch (err) {
+      grid.innerHTML = '';
+      grid.setAttribute('aria-busy', 'false');
+      errorText.textContent = err.message;
+      errorState.hidden = false;
+    }
+  }
+
+  async function expand() {
+    expandBtn.disabled = true;
+    expandLabel.textContent = 'Summoning…';
+    try {
+      applyPayload(await SpellScroll.api('/api/v1/feed/expand', { method: 'POST', timeout: 120000 }));
+      SpellScroll.toast('Feed rebuilt from your latest signature.', 'success');
+    } catch (err) {
+      SpellScroll.toast(err.message, 'error');
+    } finally {
+      expandBtn.disabled = false;
+      expandLabel.textContent = 'Expand';
+    }
+  }
+
+  async function sendFeedback(item, status, rating, note) {
+    var previous = item.status;
+    item.status = status; // optimistic
+    try {
+      await SpellScroll.api('/api/v1/feed/feedback', {
+        method: 'POST',
+        body: {
+          webtoon_id: item.id,
+          status: status,
+          rating: rating === undefined ? null : rating,
+          feedback_note: note || '',
+        },
+      });
+      return true;
+    } catch (err) {
+      item.status = previous; // roll back so the UI never lies about saved state
+      SpellScroll.toast(err.message, 'error');
+      render();
+      return false;
+    }
+  }
+
+  /* -------------------------------------------------------------- dialog */
+
+  function renderStars() {
+    var html = '';
+    for (var value = 1; value <= 5; value++) {
+      html += '<button class="stars__btn' + (value <= state.rating ? ' is-on' : '') +
+        '" type="button" role="radio" aria-checked="' + (value === state.rating) +
+        '" aria-label="' + value + ' of 5" data-star="' + value + '">' +
+        '<svg aria-hidden="true"><use href="#i-star"></use></svg></button>';
+    }
+    starsEl.innerHTML = html;
+  }
+
+  function openDialog(item) {
+    state.target = item;
+    state.rating = 5;
+    noteEl.value = '';
+    seriesEl.textContent = item.title;
+    renderStars();
+    dialog.hidden = false;
+    state.releaseFocus = SpellScroll.trapFocus(dialog, closeDialog);
+  }
+
+  function closeDialog() {
+    dialog.hidden = true;
+    state.target = null;
+    if (state.releaseFocus) { state.releaseFocus(); state.releaseFocus = null; }
+  }
+
+  starsEl.addEventListener('click', function (event) {
+    var button = event.target.closest('[data-star]');
+    if (button) { state.rating = Number(button.dataset.star); renderStars(); }
+  });
+
+  dialog.querySelector('[data-dialog-close]').addEventListener('click', closeDialog);
+  dialog.querySelector('[data-dialog-cancel]').addEventListener('click', closeDialog);
+  dialog.addEventListener('click', function (event) {
+    if (event.target === dialog) { closeDialog(); }
+  });
+
+  dialog.querySelector('[data-dialog-save]').addEventListener('click', async function () {
+    var item = state.target;
+    if (!item) { return; }
+    closeDialog();
+    if (await sendFeedback(item, 'completed', state.rating, noteEl.value)) {
+      render();
+      SpellScroll.toast('Saved. Your signature just shifted.', 'success');
+    }
+  });
+
+  /* ------------------------------------------------------------- wiring */
+
+  toolbar.addEventListener('click', function (event) {
+    var chip = event.target.closest('[data-genre]');
+    if (!chip) { return; }
+    state.genre = chip.dataset.genre;
+    renderGenres();
+    render();
+  });
+
+  grid.addEventListener('click', async function (event) {
+    var button = event.target.closest('[data-action]');
+    if (!button) { return; }
+    var cardEl = button.closest('[data-card]');
+    var item = state.items.find(function (candidate) { return candidate.id === cardEl.dataset.card; });
+    if (!item) { return; }
+
+    if (button.dataset.action === 'rate') {
+      openDialog(item);
+      return;
+    }
+
+    if (button.dataset.action === 'skip') {
+      cardEl.classList.add('is-leaving');
+      if (await sendFeedback(item, 'skipped', 1, 'Skipped from the feed.')) {
+        // Drop it from the cycle so the grid reflows into the gap.
+        state.items = state.items.filter(function (candidate) { return candidate.id !== item.id; });
+        window.setTimeout(function () { renderGenres(); render(); }, 320);
+      } else {
+        cardEl.classList.remove('is-leaving');
+      }
+      return;
+    }
+
+    if (button.dataset.action === 'reading') {
+      if (await sendFeedback(item, 'reading', 3, 'Started reading.')) {
+        render();
+        SpellScroll.toast('Added to your reading list.', 'success');
+      }
+    }
+  });
+
+  expandBtn.addEventListener('click', expand);
+  root.querySelector('[data-expand-empty]').addEventListener('click', expand);
+  root.querySelector('[data-retry]').addEventListener('click', load);
+
+  /* --------------------------------------------------------- websocket */
+
+  function connectLive(attempt) {
+    var protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    var socket;
+    try {
+      // Auth rides on the session cookie; no token in the URL.
+      socket = new WebSocket(protocol + '//' + window.location.host + '/ws/feed/' + root.dataset.userId + '/');
+    } catch (err) {
+      return;
+    }
+
+    socket.onopen = function () {
+      liveDot.classList.add('is-live');
+      liveLabel.textContent = 'Live';
+    };
+
+    socket.onmessage = function (event) {
+      var message;
+      try { message = JSON.parse(event.data); } catch (err) { return; }
+      if (message.type === 'feed.update' && message.webtoons) {
+        applyPayload({ webtoons: message.webtoons });
+        SpellScroll.toast('Your feed was refreshed.', 'success');
+      }
+    };
+
+    socket.onclose = function () {
+      liveDot.classList.remove('is-live');
+      liveLabel.textContent = 'Offline';
+      // Back off instead of hammering a server that is down.
+      var delay = Math.min(30000, 1000 * Math.pow(2, attempt));
+      window.setTimeout(function () { connectLive(attempt + 1); }, delay);
+    };
+  }
+
+  load();
+  connectLive(0);
+});
 </script>
 {% endblock %}

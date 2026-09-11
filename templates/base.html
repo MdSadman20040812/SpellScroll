@@ -1,197 +1,182 @@
-<!DOCTYPE html>
-<html lang="en" class="h-full">
+{% load static %}<!DOCTYPE html>
+<html lang="en" data-theme="{{ request.COOKIES.spellscroll_theme|default:'' }}">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="theme-color" content="#0D0D14">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="theme-color" content="#131b18" media="(prefers-color-scheme: dark)">
+    <meta name="theme-color" content="#e9eeea" media="(prefers-color-scheme: light)">
+    <meta name="description" content="{% block description %}SpellScroll curates colourful webtoons to your taste with a multi-agent recommendation pipeline.{% endblock %}">
     <title>{% block title %}SpellScroll — AI Webtoon Discovery{% endblock %}</title>
-    <!-- Google Fonts -->
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700;900&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <!-- Tailwind CSS CDN -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        darkBg: '#09090E',
-                        darkSurface: '#12121A',
-                        darkSurfaceLighter: '#1A1A26',
-                        accentPrimary: '#A78BFA',
-                        accentSecondary: '#34D399',
-                        textPrimary: '#F1F0FF',
-                        textMuted: '#8E8EA0',
-                    },
-                    fontFamily: {
-                        display: ['Cinzel', 'serif'],
-                        body: ['Inter', 'sans-serif'],
-                    },
-                    animation: {
-                        'glow': 'glow 3s infinite ease-in-out',
-                        'spin-slow': 'spin 3s linear infinite',
-                    },
-                    keyframes: {
-                        glow: {
-                            '0%, 100%': { opacity: 1, filter: 'drop-shadow(0 0 5px rgba(167, 139, 250, 0.5))' },
-                            '50%': { opacity: 0.8, filter: 'drop-shadow(0 0 15px rgba(167, 139, 250, 0.8))' },
-                        }
-                    }
-                }
-            }
-        }
-    </script>
-    <!-- Alpine.js -->
-    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
-    <!-- FontAwesome for Icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
-    <!-- PWA Manifest & Meta -->
-    <link rel="manifest" href="/static/manifest.json">
-    <link rel="apple-touch-icon" href="/static/icons/icon-192.png">
-    
-    <style>
-        [x-cloak] { display: none !important; }
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #09090E;
-            color: #F1F0FF;
-            background-image: radial-gradient(circle at 50% 0%, rgba(167, 139, 250, 0.05) 0%, transparent 50%);
-        }
-        .font-display { font-family: 'Cinzel', serif; }
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;900&family=Cinzel+Decorative:wght@700;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
-        .text-neon-violet {
-            text-shadow: 0 0 10px rgba(167, 139, 250, 0.4), 0 0 20px rgba(167, 139, 250, 0.2);
-        }
-        .text-neon-mint {
-            text-shadow: 0 0 10px rgba(52, 211, 153, 0.4), 0 0 20px rgba(52, 211, 153, 0.2);
-        }
-        .glass-panel {
-            background: rgba(18, 18, 26, 0.7);
-            backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.05);
-        }
-        .card-glow:hover {
-            box-shadow: 0 0 20px rgba(167, 139, 250, 0.15);
-            border-color: rgba(167, 139, 250, 0.3);
-        }
-        /* Custom Scrollbar */
-        ::-webkit-scrollbar {
-            width: 6px;
-        }
-        ::-webkit-scrollbar-track {
-            background: #09090E;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #1A1A26;
-            border-radius: 10px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-            background: rgba(167, 139, 250, 0.3);
-        }
-    </style>
+    <link rel="stylesheet" href="{% static 'css/tokens.css' %}">
+    <link rel="stylesheet" href="{% static 'css/spellscroll.css' %}">
+
+    <link rel="manifest" href="{% static 'manifest.json' %}">
+    <link rel="icon" href="{% static 'icons/icon-192.png' %}">
+    <link rel="apple-touch-icon" href="{% static 'icons/icon-192.png' %}">
+
+    {% block head %}{% endblock %}
 </head>
-<body class="h-full flex flex-col justify-between overflow-x-hidden" x-data>
+<body>
+    <a class="skip-link" href="#main">Skip to content</a>
 
-    <!-- Top Navigation -->
-    <header class="bg-darkBg/60 backdrop-blur-xl border-b border-white/5 sticky top-0 z-50 px-4 sm:px-6 py-4 flex items-center justify-between transition-all duration-300">
-        <div class="flex items-center space-x-3">
-            <a href="/" class="font-display text-xl sm:text-2xl font-black tracking-widest text-accentPrimary text-neon-violet group">
-                SPELL<span class="text-white group-hover:text-accentPrimary transition-colors">SCROLL</span>
-            </a>
-        </div>
-        
+    {# Icon sprite: inlined so icons cost no extra request and inherit currentColor. #}
+    <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+      <defs>
+        <symbol id="i-scroll" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M4 5a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v12a2 2 0 0 0 2 2H8a2 2 0 0 1-2-2V7"/><path d="M4 5v2h2"/><path d="M9 8h5M9 12h5"/>
+        </symbol>
+        <symbol id="i-tags" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 7v5.2a2 2 0 0 0 .6 1.4l6.8 6.8a2 2 0 0 0 2.8 0l4.6-4.6a2 2 0 0 0 0-2.8l-6.8-6.8A2 2 0 0 0 9.6 5H5a2 2 0 0 0-2 2Z"/><circle cx="7.5" cy="9.5" r="1.2" fill="currentColor" stroke="none"/>
+        </symbol>
+        <symbol id="i-sparkles" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="m12 3 1.9 4.9L19 9.8l-5.1 1.9L12 16.6l-1.9-4.9L5 9.8l5.1-1.9Z"/><path d="M18 15.5 18.8 18l2.2.9-2.2.9-.8 2.2-.8-2.2-2.2-.9 2.2-.9Z"/>
+        </symbol>
+        <symbol id="i-crown" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="m3 7 4 4 5-7 5 7 4-4-2 12H5Z"/>
+        </symbol>
+        <symbol id="i-search" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round">
+          <circle cx="11" cy="11" r="7"/><path d="m20 20-3.6-3.6"/>
+        </symbol>
+        <symbol id="i-star" viewBox="0 0 24 24" fill="currentColor">
+          <path d="m12 2.6 2.9 6.3 6.6.8-4.9 4.6 1.3 6.7L12 17.6l-5.9 3.4 1.3-6.7L2.5 9.7l6.6-.8Z"/>
+        </symbol>
+        <symbol id="i-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12Z"/><circle cx="12" cy="12" r="2.8"/>
+        </symbol>
+        <symbol id="i-book" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15H6.5A2.5 2.5 0 0 0 4 20.5Z"/><path d="M4 20.5A2.5 2.5 0 0 1 6.5 18H20v3H6.5A2.5 2.5 0 0 1 4 20.5Z"/>
+        </symbol>
+        <symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round">
+          <path d="m4.5 12.5 5 5 10-11"/>
+        </symbol>
+        <symbol id="i-ghost" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M5 21V9.5a7 7 0 0 1 14 0V21l-2.3-1.8L14.4 21 12 19.2 9.6 21 7.3 19.2Z"/><circle cx="9.5" cy="10" r="1" fill="currentColor" stroke="none"/><circle cx="14.5" cy="10" r="1" fill="currentColor" stroke="none"/>
+        </symbol>
+        <symbol id="i-x" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+          <path d="m6 6 12 12M18 6 6 18"/>
+        </symbol>
+        <symbol id="i-info" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/>
+        </symbol>
+        <symbol id="i-alert" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 3.5 22 20H2Z"/><path d="M12 10v4M12 17h.01"/>
+        </symbol>
+        <symbol id="i-external" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M14 4h6v6"/><path d="M20 4 11 13"/><path d="M19 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h5"/>
+        </symbol>
+        <symbol id="i-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+          <circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M19.1 4.9l-1.4 1.4M6.3 17.7l-1.4 1.4"/>
+        </symbol>
+        <symbol id="i-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5Z"/>
+        </symbol>
+        <symbol id="i-refresh" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 12a9 9 0 1 1-2.6-6.4"/><path d="M21 4v5h-5"/>
+        </symbol>
+      </defs>
+    </svg>
+
+    <header class="header">
+      <div class="container header__inner">
+        <a class="brand" href="/">{% include "partials/logo.html" %}</a>
+
         {% if request.user.is_authenticated %}
-        <nav class="hidden md:flex items-center space-x-8">
-            <a href="{% url 'feed_home' %}" class="text-xs font-bold tracking-widest uppercase hover:text-accentPrimary transition-all flex items-center space-x-2 {% if request.resolver_match.url_name == 'feed_home' %}text-accentPrimary{% else %}text-textMuted{% endif %}">
-                <i class="fa-solid fa-scroll text-sm"></i> <span>Feed</span>
-            </a>
-            <a href="{% url 'genre_list' %}" class="text-xs font-bold tracking-widest uppercase hover:text-accentPrimary transition-all flex items-center space-x-2 {% if request.resolver_match.url_name == 'genre_list' %}text-accentPrimary{% else %}text-textMuted{% endif %}">
-                <i class="fa-solid fa-tags text-sm"></i> <span>Archive</span>
-            </a>
-            <a href="{% url 'profile' %}" class="text-xs font-bold tracking-widest uppercase hover:text-accentPrimary transition-all flex items-center space-x-2 {% if request.resolver_match.url_name == 'profile' %}text-accentPrimary{% else %}text-textMuted{% endif %}">
-                <i class="fa-solid fa-wand-magic-sparkles text-sm"></i> <span>Essence</span>
-            </a>
-            {% if request.user.is_superuser or request.user.is_admin_user %}
-            <a href="{% url 'admin_dashboard' %}" class="text-xs font-bold tracking-widest uppercase hover:text-accentSecondary transition-all flex items-center space-x-2 text-accentSecondary/80 hover:text-accentSecondary">
-                <i class="fa-solid fa-crown text-sm"></i> <span>Sanctum</span>
-            </a>
-            {% endif %}
+        <nav class="nav" aria-label="Primary">
+          <a class="nav__link" href="{% url 'feed_home' %}" {% if request.resolver_match.url_name == 'feed_home' %}aria-current="page"{% endif %}>
+            <svg width="17" height="17" aria-hidden="true"><use href="#i-scroll"></use></svg> Feed
+          </a>
+          <a class="nav__link" href="{% url 'genre_list' %}" {% if request.resolver_match.url_name == 'genre_list' %}aria-current="page"{% endif %}>
+            <svg width="17" height="17" aria-hidden="true"><use href="#i-tags"></use></svg> Archive
+          </a>
+          <a class="nav__link" href="{% url 'profile' %}" {% if request.resolver_match.url_name == 'profile' %}aria-current="page"{% endif %}>
+            <svg width="17" height="17" aria-hidden="true"><use href="#i-sparkles"></use></svg> Essence
+          </a>
+          {% if request.user.is_superuser or request.user.is_admin_user %}
+          <a class="nav__link" href="{% url 'admin_dashboard' %}">
+            <svg width="17" height="17" aria-hidden="true"><use href="#i-crown"></use></svg> Sanctum
+          </a>
+          {% endif %}
         </nav>
-        
-        <div class="flex items-center space-x-4">
-            <div class="hidden sm:flex flex-col items-end">
-                <span class="text-[10px] text-textMuted font-bold uppercase tracking-tighter">Seeker</span>
-                <span class="text-xs text-textPrimary font-medium">{{ request.user.display_name }}</span>
-            </div>
-            <a href="{% url 'logout' %}" class="text-[10px] font-black uppercase tracking-widest py-1.5 px-4 rounded-full bg-white/5 border border-white/10 hover:bg-rose-500/10 hover:border-rose-500/30 hover:text-rose-400 transition-all">
-                Exit
-            </a>
+
+        <div class="row">
+          <button class="btn btn--ghost btn--icon" type="button" data-theme-toggle aria-label="Switch colour theme">
+            <svg width="18" height="18" aria-hidden="true" data-theme-icon><use href="#i-moon"></use></svg>
+          </button>
+          <div class="user-chip">
+            <span class="user-chip__role">Seeker</span>
+            <span class="user-chip__name">{{ request.user.display_name|default:request.user.username }}</span>
+          </div>
+          <a class="btn btn--sm btn--danger" href="{% url 'logout' %}">Exit</a>
         </div>
         {% else %}
-        <div class="flex items-center space-x-2">
-            <span class="text-[10px] text-accentPrimary border border-accentPrimary/20 bg-accentPrimary/5 px-4 py-1 rounded-full font-display font-bold uppercase tracking-[0.2em] animate-glow">
-                Scroll Offline
-            </span>
+        <div class="row">
+          <button class="btn btn--ghost btn--icon" type="button" data-theme-toggle aria-label="Switch colour theme">
+            <svg width="18" height="18" aria-hidden="true" data-theme-icon><use href="#i-moon"></use></svg>
+          </button>
+          <a class="btn btn--sm" href="{% url 'landing' %}#enter">Sign in</a>
+          <a class="btn btn--sm btn--primary" href="{% url 'landing' %}#enter">Begin</a>
         </div>
         {% endif %}
+      </div>
     </header>
 
-    <!-- Main Content -->
-    <main class="flex-grow">
-        {% if messages %}
-        <div class="max-w-4xl mx-auto px-4 mt-6 space-y-3">
-            {% for message in messages %}
-            <div class="p-4 rounded-xl flex items-center justify-between text-xs font-medium glass-panel animate-in fade-in slide-in-from-top-4 duration-500 {% if message.tags == 'success' %}border-accentSecondary/20 text-accentSecondary{% else %}border-rose-500/20 text-rose-400{% endif %}">
-                <div class="flex items-center space-x-3">
-                    <i class="fa-solid {% if message.tags == 'success' %}fa-circle-check{% else %}fa-circle-exclamation{% endif %} text-sm"></i>
-                    <span>{{ message }}</span>
-                </div>
-                <button @click="$el.parentElement.remove()" class="hover:text-white transition-colors">
-                    <i class="fa-solid fa-xmark text-sm"></i>
-                </button>
-            </div>
-            {% endfor %}
+    <main class="main" id="main">
+      {% if messages %}
+      <div class="container" style="margin-top: var(--space-6)">
+        <div class="stack-sm">
+          {% for message in messages %}
+          <div class="alert alert--{% if message.tags == 'success' %}success{% elif message.tags == 'error' %}error{% else %}info{% endif %}" role="status">
+            <svg width="18" height="18" aria-hidden="true" style="flex:0 0 auto;margin-top:1px">
+              <use href="{% if message.tags == 'success' %}#i-check{% elif message.tags == 'error' %}#i-alert{% else %}#i-info{% endif %}"></use>
+            </svg>
+            <span>{{ message }}</span>
+            <button class="alert__close" type="button" aria-label="Dismiss" onclick="this.closest('.alert').remove()">
+              <svg width="15" height="15" aria-hidden="true"><use href="#i-x"></use></svg>
+            </button>
+          </div>
+          {% endfor %}
         </div>
-        {% endif %}
-        
-        {% block content %}{% endblock %}
+      </div>
+      {% endif %}
+
+      {% block content %}{% endblock %}
     </main>
 
-    <!-- Bottom Navigation (Mobile Only) -->
     {% if request.user.is_authenticated %}
-    <div class="md:hidden sticky bottom-0 left-0 right-0 bg-darkSurface/90 border-t border-white/5 backdrop-blur-2xl flex justify-around py-4 z-50 rounded-t-2xl">
-        <a href="{% url 'feed_home' %}" class="flex flex-col items-center space-y-1.5 {% if request.resolver_match.url_name == 'feed_home' %}text-accentPrimary animate-glow{% else %}text-textMuted{% endif %}">
-            <i class="fa-solid fa-scroll text-xl"></i>
-            <span class="text-[9px] font-black uppercase tracking-widest">Feed</span>
-        </a>
-        <a href="{% url 'genre_list' %}" class="flex flex-col items-center space-y-1.5 {% if request.resolver_match.url_name == 'genre_list' %}text-accentPrimary{% else %}text-textMuted{% endif %}">
-            <i class="fa-solid fa-tags text-xl"></i>
-            <span class="text-[9px] font-black uppercase tracking-widest">Archive</span>
-        </a>
-        <a href="{% url 'profile' %}" class="flex flex-col items-center space-y-1.5 {% if request.resolver_match.url_name == 'profile' %}text-accentPrimary{% else %}text-textMuted{% endif %}">
-            <i class="fa-solid fa-wand-magic-sparkles text-xl"></i>
-            <span class="text-[9px] font-black uppercase tracking-widest">Essence</span>
-        </a>
-    </div>
+    <nav class="tabbar" aria-label="Primary mobile">
+      <a class="tabbar__link" href="{% url 'feed_home' %}" {% if request.resolver_match.url_name == 'feed_home' %}aria-current="page"{% endif %}>
+        <svg aria-hidden="true"><use href="#i-scroll"></use></svg> Feed
+      </a>
+      <a class="tabbar__link" href="{% url 'genre_list' %}" {% if request.resolver_match.url_name == 'genre_list' %}aria-current="page"{% endif %}>
+        <svg aria-hidden="true"><use href="#i-tags"></use></svg> Archive
+      </a>
+      <a class="tabbar__link" href="{% url 'profile' %}" {% if request.resolver_match.url_name == 'profile' %}aria-current="page"{% endif %}>
+        <svg aria-hidden="true"><use href="#i-sparkles"></use></svg> Essence
+      </a>
+    </nav>
     {% endif %}
 
-    <!-- Footer -->
-    <footer class="py-10 border-t border-white/5 text-center space-y-2">
-        <p class="font-display text-[10px] tracking-[0.3em] text-textMuted uppercase">SPELLSCROLL © 2026</p>
-        <p class="text-[9px] text-textMuted/60 font-medium">Cerebras AI-Driven Neural Curation Platform</p>
+    <footer class="footer">
+      <div class="container stack-sm">
+        <p class="eyebrow">SpellScroll &copy; 2026</p>
+        <p class="body-sm muted">
+          Metadata and cover art from
+          <a href="https://anilist.co" class="accent-text">AniList</a>,
+          <a href="https://mangadex.org" class="accent-text">MangaDex</a> and
+          <a href="https://kitsu.io" class="accent-text">Kitsu</a>.
+        </p>
+      </div>
     </footer>
 
-    <!-- Service Worker Registration for PWA -->
-    <script>
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/static/sw.js')
-                    .then(reg => console.log('ServiceWorker registered', reg.scope))
-                    .catch(err => console.error('ServiceWorker registration failed', err));
-            });
-        }
-    </script>
+    {# Not deferred: it sits at the end of <body>, so it does not block render,
+       and per-page inline blocks below need window.SpellScroll to already
+       exist. A deferred script would run *after* those inline scripts. #}
+    <script src="{% static 'js/app.js' %}"></script>
+    {% block scripts %}{% endblock %}
 </body>
 </html>

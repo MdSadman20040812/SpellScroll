@@ -1,10 +1,15 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  env: {
-    // Cerebras API key will be made accessible server-side
-    CEREBRAS_API_KEY: process.env.CEREBRAS_API_KEY || "csk-ewm9m3r8mkwwwn2d4kkp8r4wtp8kt66x4hxfp92ec9tyw4rw"
-  }
+  images: {
+    // Provider CDNs the catalogue snapshot points at.
+    remotePatterns: [
+      { protocol: 'https', hostname: 's4.anilist.co' },
+      { protocol: 'https', hostname: 'uploads.mangadex.org' },
+      { protocol: 'https', hostname: 'media.kitsu.io' },
+      { protocol: 'https', hostname: 'media.kitsu.app' },
+    ],
+  },
 };
 
 module.exports = nextConfig;

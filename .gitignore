@@ -59,3 +59,15 @@ captures/
 .cxx/
 .idea/
 *.iml
+
+# Local dev artefacts
+venv/
+staticfiles/
+media/covers/
+db.sqlite3
+android/local.properties
+android/.gradle/
+android/app/build/
+android/build/
+spellscroll-web/.next/
+spellscroll-web/node_modules/

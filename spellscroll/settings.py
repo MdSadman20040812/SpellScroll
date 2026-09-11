@@ -33,6 +33,10 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    # Serves /static/ under any ASGI server. Django only auto-serves static
+    # files through `runserver`, so without this the app has no CSS when run
+    # under uvicorn/daphne - which is how the unified ASGI app is deployed.
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -44,12 +48,28 @@ MIDDLEWARE = [
 
 ROOT_URLCONF = 'spellscroll.urls'
 
+# Django >= 4.1 wraps template loading in the cached loader even when DEBUG is
+# on; `runserver` hides that by restarting the process on every edit. This app
+# is served by uvicorn/daphne (the unified ASGI entry point), where nothing
+# restarts, so template edits were silently ignored until the server was
+# bounced. Selecting the loaders explicitly restores per-request reloading in
+# development while keeping the cached loader in production.
+_TEMPLATE_LOADERS = [
+    'django.template.loaders.filesystem.Loader',
+    'django.template.loaders.app_directories.Loader',
+]
+
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
         'DIRS': [os.path.join(BASE_DIR, 'templates')],
-        'APP_DIRS': True,
+        # APP_DIRS must stay unset when OPTIONS['loaders'] is given.
         'OPTIONS': {
+            'loaders': (
+                _TEMPLATE_LOADERS
+                if DEBUG
+                else [('django.template.loaders.cached.Loader', _TEMPLATE_LOADERS)]
+            ),
             'context_processors': [
                 'django.template.context_processors.debug',
                 'django.template.context_processors.request',
@@ -107,6 +127,21 @@ STATIC_URL = '/static/'
 STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
+# WhiteNoise serves STATICFILES_DIRS directly while DEBUG is on, so no
+# collectstatic step is needed during development.
+WHITENOISE_USE_FINDERS = DEBUG
+WHITENOISE_AUTOREFRESH = DEBUG
+STORAGES = {
+    'default': {'BACKEND': 'django.core.files.storage.FileSystemStorage'},
+    'staticfiles': {
+        'BACKEND': (
+            'django.contrib.staticfiles.storage.StaticFilesStorage'
+            if DEBUG
+            else 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+        )
+    },
+}
+
 # Media files (User preference documents)
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
@@ -122,8 +157,27 @@ CHANNEL_LAYERS = {
     }
 }
 
-# API configuration keys loaded from .env
-CEREBRAS_API_KEY = os.getenv('CEREBRAS_API_KEY', 'mock_key')
+# ---------------------------------------------------------------------------
+# LLM provider (optional).
+#
+# Every supported provider speaks the OpenAI /chat/completions shape, so
+# switching is two env vars. All of these have a free tier; see services/llm.py
+# for the model defaults. Leave LLM_PROVIDER unset to run entirely on the
+# deterministic local ranking, which needs no key and no network.
+#
+#   LLM_PROVIDER=groq | gemini | openrouter | cerebras | none
+#   LLM_API_KEY=...
+#   LLM_MODEL=...        (optional override)
+# ---------------------------------------------------------------------------
+LLM_PROVIDER = os.getenv('LLM_PROVIDER', '')
+LLM_API_KEY = os.getenv('LLM_API_KEY', '')
+LLM_MODEL = os.getenv('LLM_MODEL', '')
+
+# Back-compat: an existing CEREBRAS_API_KEY keeps working without edits.
+CEREBRAS_API_KEY = os.getenv('CEREBRAS_API_KEY', '')
+if not LLM_PROVIDER and CEREBRAS_API_KEY and CEREBRAS_API_KEY != 'mock_key':
+    LLM_PROVIDER = 'cerebras'
+    LLM_API_KEY = CEREBRAS_API_KEY
 SERPAPI_KEY = os.getenv('SERPAPI_KEY', 'mock_key')
 LANGSMITH_API_KEY = os.getenv('LANGSMITH_API_KEY', 'mock_key')
 MANGADEX_CLIENT_ID = os.getenv('MANGADEX_CLIENT_ID')

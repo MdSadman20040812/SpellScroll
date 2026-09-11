@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.SpellScroll" parent="Theme.MaterialComponents.NoActionBar">
+        <item name="android:windowBackground">@color/spell_background</item>
+        <item name="android:statusBarColor">@color/spell_background</item>
+        <item name="android:navigationBarColor">@color/spell_surface</item>
+        <item name="colorPrimary">@color/spell_accent</item>
+        <item name="colorPrimaryVariant">@color/spell_accent_dark</item>
+        <item name="colorSecondary">@color/spell_mint</item>
+        <item name="colorAccent">@color/spell_accent</item>
+        <item name="colorSurface">@color/spell_surface</item>
+        <item name="colorOnSurface">@color/spell_text_primary</item>
+    </style>
+</resources>

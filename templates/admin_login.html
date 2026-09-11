@@ -1,34 +1,30 @@
 {% extends 'base.html' %}
 
-{% block title %}SpellScroll — Admin Access{% endblock %}
+{% block title %}Sanctum access — SpellScroll{% endblock %}
 
 {% block content %}
-<div class="relative min-h-[80vh] flex items-center justify-center py-12 px-4">
-    <div class="max-w-md w-full bg-darkSurface border border-white/5 p-8 rounded-2xl shadow-2xl relative">
-        
-        <div class="text-center mb-8">
-            <h1 class="font-display text-2xl font-bold tracking-widest text-accentSecondary text-neon-mint mb-2">
-                ADMIN ACCESS
-            </h1>
-            <p class="text-xs text-textMuted uppercase tracking-wider font-semibold">Spellmaster Portal</p>
-        </div>
-
-        <form action="{% url 'admin_login' %}" method="POST" class="space-y-4">
-            {% csrf_token %}
-            <div>
-                <label class="block text-xs font-semibold uppercase tracking-wider text-textMuted mb-2">Admin Username</label>
-                <input type="text" name="username" required class="w-full bg-darkBg border border-white/10 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-accentSecondary transition text-white">
-            </div>
-            <div>
-                <label class="block text-xs font-semibold uppercase tracking-wider text-textMuted mb-2">Secret Key</label>
-                <input type="password" name="password" required class="w-full bg-darkBg border border-white/10 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-accentSecondary transition text-white">
-            </div>
-            
-            <button type="submit" class="w-full bg-accentSecondary text-darkBg font-bold text-sm py-3 px-4 rounded-lg hover:bg-accentSecondary/90 transition shadow-[0_0_15px_rgba(52,211,153,0.2)] mt-2">
-                Verify Credentials
-            </button>
-        </form>
-
+<div class="container container--narrow" style="padding-block: var(--space-20)">
+  <div class="panel stack" style="max-width: 420px; margin-inline: auto">
+    <div class="stack-sm">
+      <p class="eyebrow eyebrow--accent">Restricted</p>
+      <h1 class="title-2">Sanctum access</h1>
+      <p class="body-sm muted">Operator credentials are required beyond this point.</p>
     </div>
+
+    <form method="post" action="{% url 'admin_login' %}" class="stack">
+      {% csrf_token %}
+      <div class="field">
+        <label class="field__label" for="admin-username">Operator</label>
+        <input class="input" id="admin-username" name="username" autocomplete="username" required autofocus>
+      </div>
+      <div class="field">
+        <label class="field__label" for="admin-password">Passphrase</label>
+        <input class="input" id="admin-password" name="password" type="password" autocomplete="current-password" required>
+      </div>
+      <button class="btn btn--primary btn--block btn--lg" type="submit">Unseal</button>
+    </form>
+
+    <a class="btn btn--ghost btn--block" href="{% url 'landing' %}">Back to SpellScroll</a>
+  </div>
 </div>
 {% endblock %}

@@ -1,39 +1,60 @@
+"""Path-level authorisation.
+
+Kept deliberately small: it decides which URL prefixes are public, which need
+a session, and which need an admin.  View-level ``@login_required`` still does
+the real work for individual views; this exists so a newly added private view
+cannot be reached by accident.
+"""
 from django.shortcuts import redirect
-from django.http import HttpResponseForbidden
-from django.urls import resolve
+from django.urls import reverse
+
+# Reachable without signing in.  Browsing the archive and viewing a series is
+# intentionally public - the landing page links straight into it, and covers
+# must be fetchable by the browser before any session exists.
+PUBLIC_PREFIXES = (
+    "/static/",
+    "/media/",
+    "/cover/",
+    "/api/v1/",  # FastAPI validates its own JWT
+    "/genres/",
+    "/webtoon/",
+    "/admin-spell/login/",
+    "/admin/",  # Django's own admin has its own auth
+)
+
+PUBLIC_PATHS = ("/", "/login/", "/register/", "/logout/", "/offline/")
+
+# Prefixes a signed-in, non-admin user may reach.
+MEMBER_PREFIXES = (
+    "/feed",
+    "/profile",
+    "/genres",
+    "/archive",   # live provider search + on-demand import
+    "/webtoon",
+    "/cover",
+    "/onboarding",
+    "/logout",
+)
+
 
 class SpellAuthZMiddleware:
-    """
-    Enforces authorization constraints based on user roles and paths.
-    Injects request properties if needed.
-    """
     def __init__(self, get_response):
         self.get_response = get_response
-        
+
     def __call__(self, request):
         path = request.path
-        
-        # 1. Allow static/media and root authentication paths
-        if (path.startswith('/static/') or 
-            path.startswith('/media/') or 
-            path.startswith('/api/v1/') or # FastAPI has its own JWT validation
-            path in ['/', '/login/', '/register/', '/logout/', '/admin-spell/login/']):
+
+        if path in PUBLIC_PATHS or path.startswith(PUBLIC_PREFIXES):
             return self.get_response(request)
-            
-        # 2. Check if user is authenticated
+
         if not request.user.is_authenticated:
-            return redirect('landing')  # Redirect anonymous users to Landing/Register
-            
-        # 3. Check role authorization rules
-        # If user is admin (is_superuser or is_admin_user flag), they can access anything
-        if request.user.is_superuser or getattr(request.user, 'is_admin_user', False):
+            # Preserve where they were headed so login can return them there.
+            return redirect("{0}?next={1}".format(reverse("landing"), path))
+
+        if request.user.is_superuser or getattr(request.user, "is_admin_user", False):
             return self.get_response(request)
-            
-        # Standard user path whitelist
-        permitted_prefixes = ['/feed', '/profile', '/genres', '/webtoons', '/onboarding', '/logout']
-        is_permitted = any(path.startswith(prefix) for prefix in permitted_prefixes)
-        
-        if not is_permitted:
-            return HttpResponseForbidden("Access Denied: You do not have permission to access this resource.")
-            
+
+        if not path.startswith(MEMBER_PREFIXES):
+            return redirect("feed_home")
+
         return self.get_response(request)

@@ -1,134 +1,230 @@
 {% extends 'base.html' %}
 
-{% block title %}SpellScroll — Spellmaster Dashboard{% endblock %}
+{% block title %}Sanctum — SpellScroll admin{% endblock %}
+
+{% block head %}
+<style>
+  .table-wrap {
+    overflow-x: auto;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    background: var(--surface);
+  }
+  table { width: 100%; border-collapse: collapse; font-size: var(--text-sm); }
+  thead th {
+    position: sticky;
+    top: 0;
+    padding: var(--space-3) var(--space-4);
+    background: var(--surface-raised);
+    border-bottom: 1px solid var(--border);
+    text-align: left;
+    font-size: var(--text-2xs);
+    font-weight: var(--weight-bold);
+    letter-spacing: var(--tracking-wide);
+    text-transform: uppercase;
+    color: var(--text-muted);
+    white-space: nowrap;
+  }
+  tbody td {
+    padding: var(--space-3) var(--space-4);
+    border-bottom: 1px solid var(--border);
+    vertical-align: middle;
+  }
+  tbody tr:last-child td { border-bottom: 0; }
+  tbody tr:hover { background: var(--surface-raised); }
+  .num { font-variant-numeric: tabular-nums; text-align: right; }
+  .thumb {
+    width: 34px;
+    aspect-ratio: 2 / 3;
+    object-fit: cover;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border);
+  }
+  .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; }
+  .dot--ok { background: var(--accent-2); }
+  .dot--warn { background: var(--ink-amber-400); }
+  .admin-tabs { display: flex; gap: var(--space-1); border-bottom: 1px solid var(--border); margin-bottom: var(--space-6); }
+  .admin-tabs button {
+    padding: var(--space-3) var(--space-5);
+    background: none;
+    border: 0;
+    border-bottom: 2px solid transparent;
+    color: var(--text-muted);
+    font-size: var(--text-sm);
+    font-weight: var(--weight-semibold);
+    cursor: pointer;
+  }
+  .admin-tabs button[aria-selected="true"] { color: var(--accent); border-bottom-color: var(--accent); }
+</style>
+{% endblock %}
 
 {% block content %}
-<div class="max-w-7xl mx-auto px-4 sm:px-6 py-8 space-y-8">
-    
-    <!-- Header banner -->
-    <div class="bg-darkSurface border border-accentSecondary/20 p-6 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-4 shadow-[0_0_15px_rgba(52,211,153,0.05)]">
-        <div class="flex items-center space-x-4">
-            <div class="w-12 h-12 bg-accentSecondary/10 rounded-xl flex items-center justify-center text-accentSecondary border border-accentSecondary/20 text-lg">
-                <i class="fa-solid fa-crown"></i>
-            </div>
-            <div>
-                <h1 class="text-xl font-bold tracking-tight text-white">Spellmaster Admin Dashboard</h1>
-                <p class="text-xs text-textMuted mt-0.5">Control indexing, reset collections, and manage catalog mappings.</p>
-            </div>
-        </div>
-        
-        <div class="flex items-center space-x-3">
-            <!-- Reset Chroma -->
-            <form action="{% url 'admin_reset_chroma' %}" method="POST" onsubmit="return confirm('Resetting ChromaDB will delete all local vectors. Proceed?');">
-                {% csrf_token %}
-                <button type="submit" class="text-xs font-semibold bg-rose-950/20 hover:bg-rose-900 border border-rose-500/30 text-rose-300 px-4 py-2.5 rounded-lg transition duration-200">
-                    <i class="fa-solid fa-trash mr-1"></i> Reset Vector Store
-                </button>
-            </form>
-            <!-- Trigger Scrape -->
-            <form action="{% url 'admin_trigger_scrape' %}" method="POST">
-                {% csrf_token %}
-                <button type="submit" class="text-xs font-semibold bg-accentSecondary text-darkBg px-4 py-2.5 rounded-lg hover:bg-accentSecondary/90 transition shadow-[0_0_10px_rgba(52,211,153,0.2)]">
-                    <i class="fa-solid fa-arrows-rotate mr-1"></i> Trigger Seeding Scrape
-                </button>
-            </form>
-        </div>
+<div class="container" data-admin>
+
+  <header class="stack" style="padding-block: var(--space-10) var(--space-8)">
+    <p class="eyebrow eyebrow--accent">Sanctum</p>
+    <h1 class="title-1">Operations</h1>
+  </header>
+
+  <div class="stat-grid" style="margin-bottom: var(--space-8)">
+    <div class="stat"><p class="stat__value accent-text">{{ user_count }}</p><p class="stat__label">Seekers</p></div>
+    <div class="stat"><p class="stat__value accent-text">{{ webtoon_count }}</p><p class="stat__label">Active series</p></div>
+    <div class="stat">
+      <p class="stat__value" style="color: var(--accent-2)">{{ covers_cached }}</p>
+      <p class="stat__label">Covers mirrored</p>
     </div>
-
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        
-        <!-- Left 1 Column: Users & Operating Cycles -->
-        <div class="lg:col-span-1 space-y-8">
-            <!-- Users List -->
-            <div class="bg-darkSurface border border-white/5 p-6 rounded-2xl shadow-lg space-y-4">
-                <h3 class="font-bold text-xs uppercase text-accentPrimary tracking-wider border-b border-white/5 pb-2">Registered Users ({{ users|length }})</h3>
-                <div class="divide-y divide-white/5 max-h-60 overflow-y-auto pr-1">
-                    {% for u in users %}
-                    <div class="py-3 flex flex-col space-y-0.5 text-xs">
-                        <div class="flex items-center justify-between">
-                            <span class="font-semibold text-white">{{ u.username }}</span>
-                            <span class="text-[9px] uppercase tracking-wider px-2 py-0.5 rounded {% if u.onboarding_complete %}bg-emerald-500/10 text-emerald-400{% else %}bg-amber-500/10 text-amber-400{% endif %}">
-                                {% if u.onboarding_complete %}Onboarded{% else %}Pending{% endif %}
-                            </span>
-                        </div>
-                        <span class="text-textMuted font-mono text-[10px] truncate">{{ u.preference_json_path }}</span>
-                    </div>
-                    {% endfor %}
-                </div>
-            </div>
-
-            <!-- Operating Cycles logs -->
-            <div class="bg-darkSurface border border-white/5 p-6 rounded-2xl shadow-lg space-y-4">
-                <h3 class="font-bold text-xs uppercase text-accentPrimary tracking-wider border-b border-white/5 pb-2">Operation Run Logger</h3>
-                <div class="divide-y divide-white/5 max-h-64 overflow-y-auto pr-1">
-                    {% for op in op_cycles %}
-                    <div class="py-2.5 flex justify-between items-center text-xs">
-                        <div class="flex flex-col space-y-0.5">
-                            <span class="font-semibold text-white capitalize">{{ op.phase }}</span>
-                            <span class="text-[10px] text-textMuted">{{ op.timestamp|date:"M d, H:i" }}</span>
-                        </div>
-                        {% if op.langsmith_trace_url %}
-                        <a href="{{ op.langsmith_trace_url }}" target="_blank" class="text-[10px] text-accentPrimary hover:underline">
-                            Trace Link <i class="fa-solid fa-arrow-up-right-from-square text-[9px]"></i>
-                        </a>
-                        {% endif %}
-                    </div>
-                    {% empty %}
-                    <p class="text-xs text-textMuted py-4 text-center">No runs logged yet.</p>
-                    {% endfor %}
-                </div>
-            </div>
-        </div>
-
-        <!-- Right 2 Columns: Catalog Editor -->
-        <div class="lg:col-span-2 bg-darkSurface border border-white/5 p-6 rounded-2xl shadow-lg space-y-6">
-            <div class="flex items-center justify-between border-b border-white/5 pb-3">
-                <h3 class="font-bold text-xs uppercase text-accentPrimary tracking-wider">Master Webtoon Catalog (First 50)</h3>
-                <span class="text-xs text-textMuted">Total cataloged: {{ webtoons|length }}</span>
-            </div>
-
-            <div class="overflow-x-auto">
-                <table class="w-full text-left border-collapse text-xs">
-                    <thead>
-                        <tr class="border-b border-white/5 text-textMuted font-semibold">
-                            <th class="py-3 px-2">Title</th>
-                            <th class="py-3 px-2">Genres</th>
-                            <th class="py-3 px-2">Color Rating</th>
-                            <th class="py-3 px-2">Popularity</th>
-                            <th class="py-3 px-2">Status</th>
-                            <th class="py-3 px-2 text-right">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-white/5">
-                        {% for wt in webtoons %}
-                        <tr class="hover:bg-white/5 transition duration-150">
-                            <td class="py-3 px-2 font-semibold text-white">{{ wt.title }}</td>
-                            <td class="py-3 px-2 text-textMuted capitalize">
-                                {% for g in wt.genres|slice:":2" %}{{ g }}{% if not forloop.last %}, {% endif %}{% endfor %}
-                            </td>
-                            <td class="py-3 px-2 font-mono">{{ wt.colour_rating }}</td>
-                            <td class="py-3 px-2 font-mono">#{{ wt.popularity_rank }}</td>
-                            <td class="py-3 px-2">
-                                <span class="px-2 py-0.5 rounded text-[10px] uppercase font-bold {% if wt.is_active %}bg-emerald-500/10 text-emerald-400{% else %}bg-rose-500/10 text-rose-400{% endif %}">
-                                    {% if wt.is_active %}Active{% else %}Inactive{% endif %}
-                                </span>
-                            </td>
-                            <td class="py-3 px-2 text-right">
-                                <a href="{% url 'admin_edit_webtoon' wt.pk %}" class="text-accentPrimary hover:underline font-semibold">
-                                    <i class="fa-solid fa-pen-to-square"></i> Edit
-                                </a>
-                            </td>
-                        </tr>
-                        {% empty %}
-                        <tr>
-                            <td colspan="6" class="py-8 text-center text-textMuted">No catalog items. Run Seeding Scrape.</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        </div>
-
+    <div class="stat">
+      <p class="stat__value" style="color: {% if covers_missing %}var(--ink-amber-400){% else %}var(--text-faint){% endif %}">{{ covers_missing }}</p>
+      <p class="stat__label">Using placeholders</p>
     </div>
+    <div class="stat"><p class="stat__value muted">{{ cycle_count }}</p><p class="stat__label">Feed cycles</p></div>
+  </div>
+
+  <section class="panel stack" style="margin-bottom: var(--space-10)">
+    <h2 class="title-3">Maintenance</h2>
+    <div class="row row--wrap">
+      <form method="post" action="{% url 'admin_trigger_scrape' %}">
+        {% csrf_token %}
+        <button class="btn btn--primary" type="submit">
+          <svg width="16" height="16" aria-hidden="true"><use href="#i-refresh"></use></svg>
+          Sync catalogue from providers
+        </button>
+      </form>
+      <form method="post" action="{% url 'admin_resync_covers' %}">
+        {% csrf_token %}
+        <button class="btn" type="submit">
+          <svg width="16" height="16" aria-hidden="true"><use href="#i-eye"></use></svg>
+          Re-mirror all covers
+        </button>
+      </form>
+      <form method="post" action="{% url 'admin_reset_chroma' %}"
+            onsubmit="return confirm('This clears every embedding and cached recommendation reason. Continue?')">
+        {% csrf_token %}
+        <button class="btn btn--danger" type="submit">Reset vector store</button>
+      </form>
+    </div>
+    <p class="body-sm faint">
+      Catalogue sync pulls live from AniList, then MangaDex and Kitsu as fallbacks.
+      It can take a couple of minutes.
+    </p>
+  </section>
+
+  <div class="admin-tabs" role="tablist">
+    <button type="button" role="tab" aria-selected="true" data-tab="series">Series</button>
+    <button type="button" role="tab" aria-selected="false" data-tab="users">Seekers</button>
+    <button type="button" role="tab" aria-selected="false" data-tab="cycles">Cycles</button>
+  </div>
+
+  <section data-panel="series">
+    <div class="table-wrap">
+      <table>
+        <caption class="visually-hidden">Catalogue, most popular first</caption>
+        <thead>
+          <tr>
+            <th scope="col">Cover</th><th scope="col">Title</th><th scope="col">Genres</th>
+            <th scope="col" class="num">Score</th><th scope="col" class="num">Colour</th>
+            <th scope="col">Source</th><th scope="col">Art</th><th scope="col"></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in webtoons %}
+          <tr>
+            <td><img class="thumb" src="{{ item.cover_proxy_url }}" alt="" loading="lazy" width="34" height="51"></td>
+            <td>
+              <a href="{% url 'webtoon_detail' item.slug %}" class="accent-text">{{ item.title }}</a>
+              {% if item.release_year %}<span class="faint"> · {{ item.release_year }}</span>{% endif %}
+            </td>
+            <td class="muted">{{ item.genres|slice:":3"|join:", " }}</td>
+            <td class="num">{% if item.average_score %}{{ item.average_score }}{% else %}—{% endif %}</td>
+            <td class="num">{{ item.colour_rating|floatformat:2 }}</td>
+            <td class="muted">{{ item.cover_source|default:"—" }}</td>
+            <td>
+              {% if item.cover_cached %}
+              <span class="dot dot--ok" title="Mirrored locally"></span>
+              {% else %}
+              <span class="dot dot--warn" title="Placeholder in use"></span>
+              {% endif %}
+            </td>
+            <td><a class="btn btn--sm" href="{% url 'admin_edit_webtoon' item.pk %}">Edit</a></td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="8" class="muted">Catalogue is empty. Run a provider sync above.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section data-panel="users" hidden>
+    <div class="table-wrap">
+      <table>
+        <caption class="visually-hidden">Registered accounts</caption>
+        <thead>
+          <tr><th scope="col">Username</th><th scope="col">Display name</th><th scope="col">Email</th>
+              <th scope="col">Onboarded</th><th scope="col">Role</th><th scope="col">Joined</th></tr>
+        </thead>
+        <tbody>
+          {% for account in users %}
+          <tr>
+            <td>{{ account.username }}</td>
+            <td class="muted">{{ account.display_name }}</td>
+            <td class="muted">{{ account.email }}</td>
+            <td>{% if account.onboarding_complete %}<span class="dot dot--ok"></span>{% else %}<span class="dot dot--warn"></span>{% endif %}</td>
+            <td class="muted">{% if account.is_superuser or account.is_admin_user %}Admin{% else %}Seeker{% endif %}</td>
+            <td class="muted">{{ account.created_at|date:"j M Y" }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section data-panel="cycles" hidden>
+    <div class="table-wrap">
+      <table>
+        <caption class="visually-hidden">Feed cycles</caption>
+        <thead>
+          <tr><th scope="col">Seeker</th><th scope="col" class="num">Cycle</th>
+              <th scope="col" class="num">Suggested</th><th scope="col">Flags</th><th scope="col">Created</th></tr>
+        </thead>
+        <tbody>
+          {% for cycle in cycles|slice:":40" %}
+          <tr>
+            <td>{{ cycle.user.username }}</td>
+            <td class="num">{{ cycle.cycle_number }}</td>
+            <td class="num">{{ cycle.webtoons_suggested|length }}</td>
+            <td class="muted">
+              {% if cycle.all_skipped %}all-skipped {% endif %}
+              {% if cycle.fallback_triggered %}fallback {% endif %}
+              {% if cycle.scrape_expansion_triggered %}expanded{% endif %}
+            </td>
+            <td class="muted">{{ cycle.created_at|date:"j M Y H:i" }}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="5" class="muted">No feed cycles recorded yet.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  SpellScroll.ready(function () {
+    var root = document.querySelector('[data-admin]');
+    root.querySelectorAll('[data-tab]').forEach(function (tab) {
+      tab.addEventListener('click', function () {
+        root.querySelectorAll('[data-tab]').forEach(function (other) {
+          other.setAttribute('aria-selected', String(other === tab));
+        });
+        root.querySelectorAll('[data-panel]').forEach(function (panel) {
+          panel.hidden = panel.dataset.panel !== tab.dataset.tab;
+        });
+      });
+    });
+  });
+</script>
 {% endblock %}

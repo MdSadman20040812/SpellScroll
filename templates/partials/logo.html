@@ -1,0 +1,46 @@
+{% comment %}
+SpellScroll identity.
+
+The mark is an arcane sigil - a concave-sided diamond frame (the silhouette
+fantasy game logos tend to use) enclosing a furled scroll and a four-point
+spark. The wordmark is set in Cinzel Decorative, whose swashed capitals read as
+fantasy calligraphy while staying legible at nav size, and is filled with a
+dark-green -> dark-silver gradient via background-clip.
+
+Params:
+  size   - "sm" (nav, default) or "lg" (hero)
+{% endcomment %}
+<span class="logo logo--{{ size|default:'sm' }}" role="img" aria-label="SpellScroll">
+  <svg class="logo__sigil" viewBox="0 0 48 48" aria-hidden="true" focusable="false">
+    <defs>
+      <linearGradient id="sigilStroke{{ size|default:'sm' }}" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0%"   stop-color="#1f6b4c"/>
+        <stop offset="52%"  stop-color="#7d968a"/>
+        <stop offset="100%" stop-color="#c9d5ce"/>
+      </linearGradient>
+      <linearGradient id="sigilFill{{ size|default:'sm' }}" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%"   stop-color="#1f6b4c" stop-opacity=".38"/>
+        <stop offset="100%" stop-color="#c9d5ce" stop-opacity=".08"/>
+      </linearGradient>
+    </defs>
+
+    <!-- Concave diamond frame -->
+    <path d="M24 2c3.6 8.2 13.8 18.4 22 22-8.2 3.6-18.4 13.8-22 22-3.6-8.2-13.8-18.4-22-22C10.2 20.4 20.4 10.2 24 2Z"
+          fill="url(#sigilFill{{ size|default:'sm' }})"
+          stroke="url(#sigilStroke{{ size|default:'sm' }})" stroke-width="1.6" stroke-linejoin="round"/>
+
+    <!-- Furled scroll -->
+    <path d="M17.5 17.5h11.2a2.6 2.6 0 0 1 2.6 2.6v9.4a2.6 2.6 0 0 0 2.6 2.6H20.1a2.6 2.6 0 0 1-2.6-2.6v-9.4"
+          fill="none" stroke="url(#sigilStroke{{ size|default:'sm' }})" stroke-width="1.7"
+          stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M17.5 17.5a2.6 2.6 0 0 0 0 5.2h2.6" fill="none"
+          stroke="url(#sigilStroke{{ size|default:'sm' }})" stroke-width="1.7" stroke-linecap="round"/>
+    <path d="M22.6 22.7h5.6M22.6 26.4h5.6" fill="none"
+          stroke="#34d399" stroke-width="1.5" stroke-linecap="round" opacity=".85"/>
+
+    <!-- Spark -->
+    <path d="m35.4 12.4.9 2.4 2.4.9-2.4.9-.9 2.4-.9-2.4-2.4-.9 2.4-.9Z" fill="#c9d5ce" opacity=".9"/>
+  </svg>
+
+  <span class="logo__word">SpellScroll</span>
+</span>

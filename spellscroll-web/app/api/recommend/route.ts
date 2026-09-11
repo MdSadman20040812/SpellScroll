@@ -3,7 +3,9 @@ import fs from 'fs';
 import path from 'path';
 
 // Define Cerebras configurations
-const CEREBRAS_API_KEY = process.env.CEREBRAS_API_KEY || "csk-ewm9m3r8mkwwwn2d4kkp8r4wtp8kt66x4hxfp92ec9tyw4rw";
+// Read from the environment only. A previous revision inlined a literal key
+// here as a fallback; never reintroduce one - the file is committed.
+const CEREBRAS_API_KEY = process.env.CEREBRAS_API_KEY || "";
 const Cerebras_API_URL = "https://api.cerebras.ai/v1/chat/completions";
 
 interface WebtoonItem {
@@ -111,6 +113,11 @@ export async function POST(request: Request) {
 
     let rankedList: any[] = [];
     try {
+      if (!CEREBRAS_API_KEY) {
+        // No key configured: fall through to the deterministic local ranking
+        // below rather than sending an unauthenticated request.
+        throw new Error("CEREBRAS_API_KEY is not set; using local ranking.");
+      }
       const apiResp = await fetch(Cerebras_API_URL, {
         method: "POST",
         headers: {

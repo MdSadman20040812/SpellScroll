@@ -1,0 +1,326 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.swiperefreshlayout.widget.SwipeRefreshLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/swipe_refresh"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/spell_background">
+
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <!-- Progress Loading Spinner -->
+        <ProgressBar
+            android:id="@+id/progress_feed"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:layout_gravity="center"
+            android:indeterminateTint="@color/spell_accent"
+            android:visibility="gone" />
+
+        <!-- Main Discovery Deck Content -->
+        <ScrollView
+            android:id="@+id/layout_deck"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:fillViewport="true"
+            android:padding="16dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_horizontal"
+                android:orientation="vertical">
+
+                <!-- Prominent Discovery Card -->
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/card_webtoon"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    app:cardBackgroundColor="@color/spell_surface"
+                    app:cardCornerRadius="16dp"
+                    app:cardElevation="6dp"
+                    app:strokeColor="@color/spell_surface_border"
+                    app:strokeWidth="1dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical">
+
+                        <!-- Cover Header with Overlay -->
+                        <FrameLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="340dp">
+
+                            <ImageView
+                                android:id="@+id/iv_cover"
+                                android:layout_width="match_parent"
+                                android:layout_height="match_parent"
+                                android:contentDescription="@null"
+                                android:scaleType="centerCrop" />
+
+                            <!-- Gradient Vignette overlay -->
+                            <View
+                                android:layout_width="match_parent"
+                                android:layout_height="120dp"
+                                android:layout_gravity="bottom"
+                                android:background="@drawable/bg_bottom_gradient" />
+
+                            <!-- Score Badge -->
+                            <TextView
+                                android:id="@+id/tv_score"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_gravity="top|end"
+                                android:layout_margin="12dp"
+                                android:background="@drawable/bg_score_badge"
+                                android:fontFamily="sans-serif-medium"
+                                android:text="★ 8.9"
+                                android:textColor="@color/spell_gold"
+                                android:textSize="12sp" />
+
+                            <!-- Taste Rationale Badge -->
+                            <TextView
+                                android:id="@+id/tv_reason"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_gravity="bottom|start"
+                                android:layout_marginStart="14dp"
+                                android:layout_marginBottom="12dp"
+                                android:background="@drawable/bg_score_badge"
+                                android:fontFamily="sans-serif-medium"
+                                android:text="✨ Matched to taste"
+                                android:textColor="@color/spell_accent"
+                                android:textSize="12sp" />
+
+                        </FrameLayout>
+
+                        <!-- Card Body -->
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:padding="16dp"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:id="@+id/tv_title"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:ellipsize="end"
+                                android:fontFamily="serif"
+                                android:maxLines="2"
+                                android:text="Webtoon Title"
+                                android:textColor="@color/spell_text_primary"
+                                android:textSize="20sp"
+                                android:textStyle="bold" />
+
+                            <!-- Genres Row -->
+                            <TextView
+                                android:id="@+id/tv_genres"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="6dp"
+                                android:fontFamily="sans-serif-medium"
+                                android:text="Fantasy · Action · Romance"
+                                android:textColor="@color/spell_mint"
+                                android:textSize="12sp" />
+
+                            <!-- Synopsis Preview -->
+                            <TextView
+                                android:id="@+id/tv_synopsis"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="10dp"
+                                android:ellipsize="end"
+                                android:lineSpacingExtra="3dp"
+                                android:maxLines="4"
+                                android:text="Description of the webtoon..."
+                                android:textColor="@color/spell_text_muted"
+                                android:textSize="13sp" />
+
+                            <TextView
+                                android:id="@+id/btn_tap_details"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="8dp"
+                                android:text="View full details →"
+                                android:textColor="@color/spell_accent"
+                                android:textSize="12sp"
+                                android:textStyle="bold" />
+
+                        </LinearLayout>
+
+                    </LinearLayout>
+
+                </com.google.android.material.card.MaterialCardView>
+
+                <!-- Reaction Action Buttons -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="20dp"
+                    android:layout_marginBottom="16dp"
+                    android:gravity="center"
+                    android:orientation="horizontal">
+
+                    <!-- Skip Button -->
+                    <LinearLayout
+                        android:id="@+id/btn_skip"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginEnd="24dp"
+                        android:background="?selectableItemBackgroundBorderless"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:gravity="center"
+                        android:orientation="vertical">
+
+                        <FrameLayout
+                            android:layout_width="54dp"
+                            android:layout_height="54dp"
+                            android:background="@drawable/bg_genre_chip">
+
+                            <ImageView
+                                android:layout_width="26dp"
+                                android:layout_height="26dp"
+                                android:layout_gravity="center"
+                                android:contentDescription="Skip"
+                                android:src="@drawable/ic_close_skip" />
+                        </FrameLayout>
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="4dp"
+                            android:text="Skip"
+                            android:textColor="@color/spell_text_muted"
+                            android:textSize="11sp" />
+                    </LinearLayout>
+
+                    <!-- Save / Want to Read Button -->
+                    <LinearLayout
+                        android:id="@+id/btn_like"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginEnd="24dp"
+                        android:background="?selectableItemBackgroundBorderless"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:gravity="center"
+                        android:orientation="vertical">
+
+                        <FrameLayout
+                            android:layout_width="66dp"
+                            android:layout_height="66dp"
+                            android:background="@drawable/bg_btn_primary">
+
+                            <ImageView
+                                android:layout_width="32dp"
+                                android:layout_height="32dp"
+                                android:layout_gravity="center"
+                                android:contentDescription="Want to Read"
+                                android:src="@drawable/ic_heart_like" />
+                        </FrameLayout>
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="4dp"
+                            android:text="Reading"
+                            android:textColor="@color/spell_accent"
+                            android:textSize="12sp"
+                            android:textStyle="bold" />
+                    </LinearLayout>
+
+                    <!-- Completed Button -->
+                    <LinearLayout
+                        android:id="@+id/btn_complete"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:background="?selectableItemBackgroundBorderless"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:gravity="center"
+                        android:orientation="vertical">
+
+                        <FrameLayout
+                            android:layout_width="54dp"
+                            android:layout_height="54dp"
+                            android:background="@drawable/bg_genre_chip">
+
+                            <ImageView
+                                android:layout_width="26dp"
+                                android:layout_height="26dp"
+                                android:layout_gravity="center"
+                                android:contentDescription="Completed"
+                                android:src="@drawable/ic_check_finish" />
+                        </FrameLayout>
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="4dp"
+                            android:text="Complete"
+                            android:textColor="@color/spell_mint"
+                            android:textSize="11sp" />
+                    </LinearLayout>
+
+                </LinearLayout>
+
+            </LinearLayout>
+
+        </ScrollView>
+
+        <!-- Empty Feed State -->
+        <LinearLayout
+            android:id="@+id/layout_empty_feed"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:gravity="center"
+            android:orientation="vertical"
+            android:padding="32dp"
+            android:visibility="gone">
+
+            <ImageView
+                android:layout_width="64dp"
+                android:layout_height="64dp"
+                android:layout_marginBottom="16dp"
+                android:contentDescription="@null"
+                android:src="@drawable/ic_offline_scroll" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="serif"
+                android:text="Feed Cycle Complete"
+                android:textColor="@color/spell_text_primary"
+                android:textSize="20sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:layout_marginBottom="24dp"
+                android:gravity="center"
+                android:text="You've reviewed all webtoons in this cycle. Pull down or tap below to attune a new feed."
+                android:textColor="@color/spell_text_muted"
+                android:textSize="14sp" />
+
+            <Button
+                android:id="@+id/btn_refresh_cycle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="@drawable/bg_btn_primary"
+                android:text="Attune New Cycle"
+                android:textAllCaps="false"
+                android:textColor="#FFFFFF" />
+
+        </LinearLayout>
+
+    </FrameLayout>
+
+</androidx.swiperefreshlayout.widget.SwipeRefreshLayout>

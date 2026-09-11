@@ -1,55 +1,68 @@
 {% extends 'base.html' %}
 
-{% block title %}SpellScroll — Edit {{ webtoon.title }}{% endblock %}
+{% block title %}Edit {{ webtoon.title }} — Sanctum{% endblock %}
 
 {% block content %}
-<div class="max-w-xl mx-auto px-4 sm:px-6 py-12">
-    
-    <a href="{% url 'admin_dashboard' %}" class="inline-flex items-center space-x-2 text-xs font-semibold text-textMuted hover:text-accentPrimary transition mb-6">
-        <i class="fa-solid fa-arrow-left"></i> <span>Return to dashboard</span>
-    </a>
+<div class="container container--narrow"
+     style="padding-block: var(--space-10) var(--space-16); --card-accent: {{ webtoon.display_accent }}">
 
-    <div class="bg-darkSurface border border-white/5 p-6 sm:p-8 rounded-2xl shadow-2xl space-y-6">
-        <h2 class="text-lg font-bold text-accentPrimary">Edit Catalog Webtoon</h2>
-        
-        <form action="{% url 'admin_edit_webtoon' webtoon.pk %}" method="POST" class="space-y-4">
-            {% csrf_token %}
-            <div>
-                <label class="block text-xs font-semibold uppercase tracking-wider text-textMuted mb-2">Webtoon Title</label>
-                <input type="text" name="title" value="{{ webtoon.title }}" required class="w-full bg-darkBg border border-white/10 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-accentPrimary transition text-white">
-            </div>
-            
-            <div>
-                <label class="block text-xs font-semibold uppercase tracking-wider text-textMuted mb-2">Genres (Comma separated)</label>
-                <input type="text" name="genres" value="{% for g in webtoon.genres %}{{ g }}{% if not forloop.last %}, {% endif %}{% endfor %}" required class="w-full bg-darkBg border border-white/10 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-accentPrimary transition text-white">
-            </div>
+  <header class="stack" style="margin-bottom: var(--space-8)">
+    <p class="eyebrow eyebrow--accent">Sanctum &middot; Edit series</p>
+    <h1 class="title-2">{{ webtoon.title }}</h1>
+  </header>
 
-            <div class="grid grid-cols-2 gap-4">
-                <div>
-                    <label class="block text-xs font-semibold uppercase tracking-wider text-textMuted mb-2">Color rating (0.0 to 1.0)</label>
-                    <input type="number" step="0.01" name="colour_rating" value="{{ webtoon.colour_rating }}" required class="w-full bg-darkBg border border-white/10 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-accentPrimary transition text-white">
-                </div>
-                <div>
-                    <label class="block text-xs font-semibold uppercase tracking-wider text-textMuted mb-2">Popularity Rank</label>
-                    <input type="number" name="popularity_rank" value="{{ webtoon.popularity_rank }}" required class="w-full bg-darkBg border border-white/10 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-accentPrimary transition text-white">
-                </div>
-            </div>
+  <div class="row" style="align-items: flex-start; gap: var(--space-6); margin-bottom: var(--space-8)">
+    <img src="{{ webtoon.cover_proxy_url }}" alt="Cover of {{ webtoon.title }}"
+         width="120" height="180"
+         style="width:120px; aspect-ratio:2/3; object-fit:cover; border-radius:var(--radius-md); border:1px solid var(--border)">
+    <dl class="stack-sm body-sm">
+      <div><dt class="meta-list__label">Provider</dt><dd class="meta-list__value">{{ webtoon.cover_source|default:"—" }}</dd></div>
+      <div><dt class="meta-list__label">AniList ID</dt><dd class="meta-list__value">{{ webtoon.anilist_id|default:"—" }}</dd></div>
+      <div><dt class="meta-list__label">MangaDex ID</dt><dd class="meta-list__value" style="word-break:break-all">{{ webtoon.mangadex_id|default:"—" }}</dd></div>
+      <div><dt class="meta-list__label">Artwork</dt>
+        <dd class="meta-list__value">{% if webtoon.cover_cached %}Mirrored locally{% else %}Placeholder in use{% endif %}</dd></div>
+    </dl>
+  </div>
 
-            <div>
-                <label class="block text-xs font-semibold uppercase tracking-wider text-textMuted mb-2">Synopsis</label>
-                <textarea name="synopsis" rows="4" required class="w-full bg-darkBg border border-white/10 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-accentPrimary transition text-white">{{ webtoon.synopsis_200w }}</textarea>
-            </div>
+  <form method="post" class="panel stack">
+    {% csrf_token %}
 
-            <div class="flex items-center space-x-2 pt-2">
-                <input type="checkbox" name="is_active" id="is_active" {% if webtoon.is_active %}checked{% endif %} class="rounded bg-darkBg border-white/10 text-accentPrimary focus:ring-0">
-                <label for="is_active" class="text-xs font-semibold text-textPrimary uppercase tracking-wider">Active in catalog</label>
-            </div>
-
-            <button type="submit" class="w-full bg-accentPrimary text-darkBg font-bold text-sm py-3.5 px-4 rounded-lg hover:bg-accentPrimary/90 transition shadow-[0_0_15px_rgba(167,139,250,0.2)] pt-2">
-                Update Record
-            </button>
-        </form>
+    <div class="field">
+      <label class="field__label" for="title">Title</label>
+      <input class="input" id="title" name="title" value="{{ webtoon.title }}" required>
     </div>
+
+    <div class="field">
+      <label class="field__label" for="genres">Genres</label>
+      <input class="input" id="genres" name="genres" value="{{ webtoon.genres|join:', ' }}"
+             aria-describedby="genres-hint">
+      <p class="field__hint" id="genres-hint">Comma separated. Lowercase is normalised on sync.</p>
+    </div>
+
+    <div class="field">
+      <label class="field__label" for="colour_rating">Colour rating</label>
+      <input class="input" id="colour_rating" name="colour_rating" type="number"
+             min="0" max="1" step="0.01" value="{{ webtoon.colour_rating|floatformat:2 }}"
+             aria-describedby="colour-hint">
+      <p class="field__hint" id="colour-hint">0 is monochrome, 1 is fully colour. Recomputed on the next provider sync.</p>
+    </div>
+
+    <div class="field">
+      <label class="field__label" for="synopsis">Synopsis</label>
+      <textarea class="textarea" id="synopsis" name="synopsis" rows="7">{{ webtoon.synopsis_200w }}</textarea>
+    </div>
+
+    <label class="row" style="gap: var(--space-3); cursor: pointer">
+      <input type="checkbox" name="is_active" {% if webtoon.is_active %}checked{% endif %}
+             style="width:18px;height:18px;accent-color:var(--accent)">
+      <span class="body-sm">Active in the catalogue</span>
+    </label>
+
+    <div class="row" style="margin-top: var(--space-4)">
+      <a class="btn grow" href="{% url 'admin_dashboard' %}">Cancel</a>
+      <button class="btn btn--primary grow" type="submit">Save changes</button>
+    </div>
+  </form>
 
 </div>
 {% endblock %}
