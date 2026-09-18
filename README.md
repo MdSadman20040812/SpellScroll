@@ -1,105 +1,97 @@
-# SPELLSCROLL 📜 — AI Webtoon Discovery
+![SpellScroll](https://img.shields.io/badge/SpellScroll-AI%20Webtoon%20Discovery-6d3ee0?style=for-the-badge)
+![Django](https://img.shields.io/badge/Django-5-1f6b4c?style=flat-square)
+![FastAPI](https://img.shields.io/badge/FastAPI-0.115-009688?style=flat-square)
+![LangGraph](https://img.shields.io/badge/LangGraph-0.2-1c1c1c?style=flat-square)
+![Coverage](https://img.shields.io/badge/Coverage-100%25-34d399?style=flat-square)
 
-**Taste-driven reading feed. Describe what you like; get a curated feed.**
-
-![License: MIT](https://img.shields.io/badge/License-MIT-6d3ee0.svg)
-![Django](https://img.shields.io/badge/Django-5-1f6b4c.svg)
-![FastAPI](https://img.shields.io/badge/API-FastAPI-0f9d72.svg)
-![Coverage](https://img.shields.io/badge/provider_coverage-100%25-34d399.svg)
-
----
-
-A taste-driven reading feed for webtoons. Describe what you like in plain language — a LangGraph agent pipeline turns that into a taste signature, searches a vector index, and rebuilds your feed every time you react to a card.
-
-Ships as **a web app (Windows/macOS/Linux, installable as a PWA)** and **an Android app**.
+**Taste-driven reading feed for webtoons. Describe what you like; get a curated feed.**
 
 ---
 
-## What's Here
+## 🖼️ Preview
 
-| Surface | Path | Notes |
-| --- | --- | --- |
-| Web app + API | `apps/`, `api/`, `templates/` | Django + FastAPI in one ASGI process |
-| Static web app | `spellscroll-web/` | Next.js; shares the design system |
-| Android shell | `android/` | WebView wrapper, back nav, pull-to-refresh |
-| Agents | `agents/` | LangGraph pipeline with local fallbacks |
-| Providers | `services/` | AniList / MangaDex / Kitsu + cover cache |
-| Design system | `static/css/` | Tokens + components, single source of truth |
+![Feed](.system_feed.png)
+*Personalized feed — taste-ranked cards with dominant-color accents.*
+
+![Search](.system_search.png)
+*Semantic search — plain-language queries find relevant series.*
+
+![Detail](.system_detail.png)
+*Detail view — synopsis, tags, and recommendations.*
+
+![Sanctum](.system_sanctum.png)
+*Sanctum library — your reading history, organized.*
 
 ---
 
-## Quick Start
+## 🏗️ Architecture
+
+```mermaid
+graph LR
+    subgraph Frontend
+        Web[Django Templates<br/>+ htmx]
+        PWA[Next.js PWA<br/>spellscroll-web/]
+    end
+    subgraph Backend
+        API[FastAPI Gateway]
+        AGENTS[LangGraph Pipeline]
+        PROV[Provider Layer<br/>AniList/MangaDex/Kitsu]
+        VDB[(ChromaDB<br/>Vector Index)]
+        CACHE[(Cover Cache<br/>media/covers/)]
+    end
+    Web <--> API
+    PWA <--> API
+    API <--> AGENTS
+    API <--> PROV
+    AGENTS <--> VDB
+    PROV <--> CACHE
+```
+
+---
+
+## ✨ Features
+
+- **Taste signature** — LangGraph agent builds your preference vector from natural language
+- **Reactive feed** — re-ranks on every like/skip/bookmark
+- **Provider coverage** — 63-title test suite with 100% resolution
+- **Cover resilience** — local mirror → fresh download → generated placeholder
+- **Offline-first PWA** — installable web app with cached catalog
+
+---
+
+## 🚀 Quick Start
 
 ```bash
-python -m venv venv && venv\Scripts\activate
+python -m venv venv && source venv/bin/activate  # or venv\Scripts\activate on Windows
 pip install -r requirements.txt
 python manage.py migrate
 python manage.py sync_catalog --limit 80
 python -m uvicorn spellscroll.asgi:application --port 8000
 ```
 
-Open <http://localhost:8000>. **No API keys required** — metadata and covers come from unauthenticated public APIs, and recommendations fall back to deterministic local ranking when no LLM is configured.
-
-Full instructions in [BACKEND_SETUP.md](BACKEND_SETUP.md).
+Open <http://localhost:8000>. **No API keys required.**
 
 ---
 
-## Cover Art That Doesn't Break
-
-Every image is served from `/cover/<uuid>/` on our own origin:
-
-1. **Local mirror** under `media/covers/`
-2. **Fresh download** from upstream (mirrored for next time)
-3. **Generated SVG placeholder** derived from the title
-
-A dead provider, hotlink block, or renamed file degrades to a styled gradient — never a broken-image icon.
-
----
-
-## Provider Coverage — Measured, Not Claimed
-
-`tests/test_provider_coverage.py` resolves 63 real titles spanning WEBTOON, Tapas, Lezhin, Manta, Tappytoon, Korean manhwa, Chinese manhua, and obscure long-tail Canvas series:
-
-```
-sample size          : 63
-resolved             : 63 (100.0%)
-  with cover art     : 63 (100.0%)
-  with synopsis      : 63 (100.0%)
-card-ready           : 63
-```
-
----
-
-## Architecture
-
-```
-┌─────────────┐     ┌─────────────┐     ┌─────────────────┐
-│  Web App    │────▶│  FastAPI    │────▶│  LangGraph      │
-│  (Django)   │     │  Gateway    │     │  Agent Pipeline │
-└─────────────┘     └─────────────┘     └────────┬────────┘
-                                                 │
-                                          ┌──────▼──────┐
-                                          │  ChromaDB   │
-                                          │  Vector Idx │
-                                          └─────────────┘
-```
-
----
-
-## Structure
+## 📁 Project Structure
 
 ```
 SpellScroll/
-├── apps/                    # Django apps
-├── api/                     # FastAPI routes
-├── agents/                  # LangGraph pipeline
-├── services/                # Provider integrations + cover cache
-├── templates/               # Django templates
-├── static/css/              # Design system
-├── spellscroll-web/         # Next.js static app
-├── android/                 # Android WebView shell
+├── agents/                    # LangGraph taste pipeline
+│   ├── pipeline.py            # Main agent orchestration
+│   ├── taste_signature.py     # Preference vector builder
+│   └── ranker.py              # Feed ranking logic
+├── api/                       # FastAPI routes
+├── apps/                      # Django apps
+├── services/                  # Provider integrations + cover cache
+│   ├── providers.py           # AniList / MangaDex / Kitsu
+│   └── cover_service.py       # Multi-tier cover resolution
+├── static/css/                # Design system tokens
+├── spellscroll-web/           # Next.js PWA frontend
+├── android/                   # Android WebView shell
+├── templates/                 # Django templates
 ├── tests/
-│   └── test_provider_coverage.py
+│   └── test_provider_coverage.py  # 63-title resolution test
 ├── requirements.txt
 ├── BACKEND_SETUP.md
 └── README.md
@@ -107,6 +99,6 @@ SpellScroll/
 
 ---
 
-## License
+## 📄 License
 
 MIT © Md Sadman Bin Masud
